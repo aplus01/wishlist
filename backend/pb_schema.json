@@ -177,6 +177,15 @@
         "name": "approved_at",
         "type": "date",
         "required": false
+      },
+      {
+        "name": "priority",
+        "type": "number",
+        "required": true,
+        "options": {
+          "min": 0,
+          "noDecimal": true
+        }
       }
     ],
     "listRule": "",

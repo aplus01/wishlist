@@ -126,7 +126,18 @@ export const items = {
       options.filter = filterStr;
     }
 
-    return pb.collection('items').getFullList(options);
+    const results = await pb.collection('items').getFullList(options);
+
+    // Sort by priority on the client side, handling missing priority values
+    return results.sort((a, b) => {
+      const priorityA = a.priority ?? 999999;
+      const priorityB = b.priority ?? 999999;
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+      // If priorities are equal (or both missing), sort by creation date (newest first)
+      return new Date(b.created) - new Date(a.created);
+    });
   },
 
   listApproved: async () => {
@@ -138,8 +149,26 @@ export const items = {
   },
 
   create: async (data) => {
+    // Get all items for this child to find max priority
+    const existingItems = await pb.collection('items').getFullList({
+      filter: pb.filter('child = {:childId}', { childId: data.child }),
+    });
+
+    // Find max priority, handling items that might not have priority set
+    let maxPriority = -1;
+    existingItems.forEach((item) => {
+      if (
+        item.priority !== undefined &&
+        item.priority !== null &&
+        item.priority > maxPriority
+      ) {
+        maxPriority = item.priority;
+      }
+    });
+
     return pb.collection('items').create({
       status: 'pending',
+      priority: maxPriority + 1,
       ...data,
     });
   },
@@ -163,6 +192,44 @@ export const items = {
 
   delete: async (id) => {
     return pb.collection('items').delete(id);
+  },
+
+  updatePriority: async (id, priority) => {
+    return pb.collection('items').update(id, { priority });
+  },
+
+  bulkUpdatePriorities: async (updates) => {
+    // updates is an array of { id, priority }
+    const promises = updates.map(({ id, priority }) =>
+      pb.collection('items').update(id, { priority })
+    );
+    return Promise.all(promises);
+  },
+
+  // Fix items without priorities - assigns priorities based on creation date
+  fixMissingPriorities: async (childId = null) => {
+    const filter = childId ? pb.filter('child = {:childId}', { childId }) : '';
+    const allItems = await pb.collection('items').getFullList({
+      filter,
+      sort: 'created',
+    });
+
+    const updates = allItems
+      .filter((item) => item.priority === undefined || item.priority === null)
+      .map((item, index) => ({
+        id: item.id,
+        priority: allItems.length + index,
+      }));
+
+    if (updates.length > 0) {
+      await Promise.all(
+        updates.map(({ id, priority }) =>
+          pb.collection('items').update(id, { priority })
+        )
+      );
+    }
+
+    return updates.length;
   },
 };
 

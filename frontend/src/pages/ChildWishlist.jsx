@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { auth, items, formatCurrency } from '../lib/pocketbase';
+import WishlistTable from '../components/WishlistTable';
 
 export default function ChildWishlist() {
   const [childData, setChildData] = useState(null);
@@ -7,6 +8,7 @@ export default function ChildWishlist() {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState('card'); // 'card' or 'table'
 
   const [formData, setFormData] = useState({
     title: '',
@@ -29,9 +31,12 @@ export default function ChildWishlist() {
         setChildData(child);
       }
 
+      // Fix any items missing priorities first
+      await items.fixMissingPriorities(childId);
+
       const itemsList = await items.list({ child: childId });
       // Filter out "from Santa" items - kids shouldn't see these
-      const visibleItems = itemsList.filter(item => !item.from_santa);
+      const visibleItems = itemsList.filter((item) => !item.from_santa);
       setWishlistItems(visibleItems);
     } catch (err) {
       console.error('Error loading data:', err);
@@ -94,6 +99,36 @@ export default function ChildWishlist() {
     }
   };
 
+  const handleReorder = async (updates) => {
+    try {
+      // Optimistically update local state immediately
+      const updatedItems = [...wishlistItems];
+      updates.forEach(({ id, priority }) => {
+        const item = updatedItems.find((i) => i.id === id);
+        if (item) {
+          item.priority = priority;
+        }
+      });
+
+      // Sort by new priorities
+      updatedItems.sort((a, b) => {
+        const priorityA = a.priority ?? 999999;
+        const priorityB = b.priority ?? 999999;
+        return priorityA - priorityB;
+      });
+
+      setWishlistItems(updatedItems);
+
+      // Then save to backend
+      await items.bulkUpdatePriorities(updates);
+    } catch (err) {
+      console.error('Error reordering items:', err);
+      alert('Failed to reorder items. Please try again.');
+      // Reload on error to revert optimistic update
+      loadData();
+    }
+  };
+
   const handleLogout = () => {
     auth.logout();
     window.location.href = '/login';
@@ -137,7 +172,14 @@ export default function ChildWishlist() {
           </div>
         </div>
 
-        <div style={{ marginBottom: '30px' }}>
+        <div
+          style={{
+            marginBottom: '30px',
+            display: 'flex',
+            gap: '12px',
+            flexWrap: 'wrap',
+          }}
+        >
           <button
             onClick={() => {
               setEditingItem(null);
@@ -153,6 +195,13 @@ export default function ChildWishlist() {
           >
             + Add Item to Wishlist
           </button>
+
+          <button
+            onClick={() => setViewMode(viewMode === 'card' ? 'table' : 'card')}
+            className='btn btn-secondary'
+          >
+            {viewMode === 'card' ? '📋 Table View' : '🎁 Card View'}
+          </button>
         </div>
 
         {wishlistItems.length === 0 ? (
@@ -160,6 +209,13 @@ export default function ChildWishlist() {
             <h2>Your wishlist is empty</h2>
             <p>Add items you'd like for Christmas!</p>
           </div>
+        ) : viewMode === 'table' ? (
+          <WishlistTable
+            items={wishlistItems}
+            onReorder={handleReorder}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
         ) : (
           <div className='grid grid-2'>
             {wishlistItems.map((item) => (
