@@ -1,0 +1,26 @@
+help me plan a change to authentication
+
+-the login screen will only be used for parent authentication. 
+- no text field for username/email
+- select name from drop down & enter password
+
+kids:
+- authenticate by navigating to a route matching their username
+- /max for max
+- /stella for stella
+
+family:
+- add route db field to users table
+- remove the signup route for family members
+- password is not needed for any user except a parent
+- use that signup process on the parent dashboard on 
+the family members view
+- add a route text field and use that to create a new route for 
+
+- authenticate by navigating to route. 
+e.g. navigating to /grandma will sign in the family member "grandma" no password needed. 
+ 
+- grandma & pap pap - /grandma-pappap
+- nana - /nana
+- katherin & matt - /katherine-matt
+

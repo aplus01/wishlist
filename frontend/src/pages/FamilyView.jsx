@@ -1,0 +1,438 @@
+import { useState, useEffect } from 'react';
+import {
+  auth,
+  authStore,
+  items as itemsAPI,
+  reservations as reservationsAPI,
+  formatCurrency,
+} from '../lib/pocketbase';
+
+export default function FamilyView() {
+  const [approvedItems, setApprovedItems] = useState([]);
+  const [myReservations, setMyReservations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all'); // all, available, reserved
+  const [kidFilter, setKidFilter] = useState('all'); // all or specific kid name
+
+  // Get current family user from either PocketBase auth or sessionStorage
+  const getCurrentUser = () => {
+    // First check PocketBase auth (for existing family members who logged in before the change)
+    const pbUser = authStore.user();
+    if (pbUser?.role === 'family_member') {
+      return pbUser;
+    }
+
+    // Then check sessionStorage (for route-based auth)
+    const familyData = sessionStorage.getItem('familyData');
+    if (familyData) {
+      try {
+        return JSON.parse(familyData);
+      } catch (err) {
+        console.error('Error parsing family data:', err);
+      }
+    }
+
+    return null;
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      // Load approved items
+      let visibleItems = [];
+      try {
+        const allApprovedItems = await itemsAPI.listApproved();
+        // Filter out "from Santa" items - family shouldn't see these
+        visibleItems = allApprovedItems.filter((item) => !item.from_santa);
+      } catch (err) {
+        console.warn('Error loading items:', err);
+      }
+
+      // Load ALL reservations to manually attach to items
+      let allReservations = [];
+      try {
+        const pb = (await import('../lib/pocketbase.js')).default;
+        allReservations = await pb.collection('reservations').getFullList({
+          expand: 'item,reserved_by',
+        });
+      } catch (err) {
+        console.warn('Error loading all reservations:', err);
+      }
+
+      // Manually attach reservations to items
+      visibleItems = visibleItems.map((item) => {
+        const itemReservations = allReservations.filter(
+          (res) => res.item === item.id
+        );
+        return {
+          ...item,
+          expand: {
+            ...item.expand,
+            reservations_via_item: itemReservations,
+          },
+        };
+      });
+
+      setApprovedItems(visibleItems);
+
+      // Load user's reservations
+      const currentUser = getCurrentUser();
+      const userId = currentUser?.id;
+      if (userId) {
+        const myRes = allReservations.filter(
+          (res) => res.reserved_by === userId
+        );
+        setMyReservations(myRes);
+      }
+    } catch (err) {
+      console.error('Error loading data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReserve = async (itemId) => {
+    try {
+      const currentUser = getCurrentUser();
+      await reservationsAPI.create(itemId, currentUser?.id);
+      // Force reload to get updated expand data
+      setLoading(true);
+      await loadData();
+    } catch (err) {
+      console.error('Error reserving item:', err);
+      const errorMessage =
+        err.message || 'Failed to reserve item. It may already be reserved.';
+      alert(errorMessage);
+    }
+  };
+
+  const handleUnreserve = async (reservationId) => {
+    if (window.confirm('Are you sure you want to unreserve this item?')) {
+      try {
+        await reservationsAPI.delete(reservationId);
+        loadData();
+      } catch (err) {
+        console.error('Error unreserving item:', err);
+        alert('Failed to unreserve item.');
+      }
+    }
+  };
+
+  const handleMarkPurchased = async (reservationId) => {
+    try {
+      await reservationsAPI.markPurchased(reservationId);
+      loadData();
+    } catch (err) {
+      console.error('Error marking as purchased:', err);
+      alert('Failed to mark as purchased.');
+    }
+  };
+
+  const handleMarkNotPurchased = async (reservationId) => {
+    try {
+      await reservationsAPI.update(reservationId, { purchased: false });
+      loadData();
+    } catch (err) {
+      console.error('Error marking as not purchased:', err);
+      alert('Failed to mark as not purchased.');
+    }
+  };
+
+  const handleLogout = () => {
+    auth.logout();
+    window.location.href = '/login';
+  };
+
+  if (loading) {
+    return <div className='container'>Loading...</div>;
+  }
+
+  const isItemReserved = (item) => {
+    return item.expand?.reservations_via_item?.length > 0;
+  };
+
+  const getMyReservation = (item) => {
+    const currentUser = getCurrentUser();
+    const userId = currentUser?.id;
+    return item.expand?.reservations_via_item?.find(
+      (res) => res.reserved_by === userId
+    );
+  };
+
+  const filteredItems = approvedItems.filter((item) => {
+    // Filter by reservation status
+    let statusMatch = true;
+    if (filter === 'available') statusMatch = !isItemReserved(item);
+    if (filter === 'reserved') statusMatch = !!getMyReservation(item);
+
+    // Filter by kid
+    const kidName = item.expand?.child?.name || 'Unknown';
+    const kidMatch = kidFilter === 'all' || kidName === kidFilter;
+
+    return statusMatch && kidMatch;
+  });
+
+  // Group items by kid
+  const itemsByKid = filteredItems.reduce((acc, item) => {
+    const kidName = item.expand?.child?.name || 'Unknown';
+    if (!acc[kidName]) acc[kidName] = [];
+    acc[kidName].push(item);
+    return acc;
+  }, {});
+
+  // Get unique kid names for filter dropdown
+  const allKidNames = [
+    ...new Set(
+      approvedItems.map((item) => item.expand?.child?.name || 'Unknown')
+    ),
+  ].sort();
+
+  return (
+    <>
+      <div className='header'>
+        <div className='header-content'>
+          <h1>🎄 Family Gift List</h1>
+          <button onClick={handleLogout} className='btn btn-secondary'>
+            Logout
+          </button>
+        </div>
+      </div>
+
+      <div className='container'>
+        <div className='card' style={{ marginBottom: '30px' }}>
+          <h2 style={{ marginBottom: '16px', color: '#165B33' }}>
+            Welcome, {getCurrentUser()?.name}!
+          </h2>
+          <p style={{ marginBottom: '20px' }}>
+            Browse the approved wishlist items and reserve gifts you'd like to
+            purchase. Once reserved, no one else can claim that item!
+          </p>
+
+          <div style={{ marginBottom: '20px' }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '8px',
+                fontWeight: 600,
+                color: '#165B33',
+              }}
+            >
+              Filter by Kid:
+            </label>
+            <select
+              value={kidFilter}
+              onChange={(e) => setKidFilter(e.target.value)}
+              style={{
+                padding: '10px 16px',
+                fontSize: '16px',
+                border: '2px solid #165B33',
+                background: 'white',
+                color: '#165B33',
+                cursor: 'pointer',
+                minWidth: '200px',
+              }}
+            >
+              <option value='all'>All Kids</option>
+              {allKidNames.map((kidName) => (
+                <option key={kidName} value={kidName}>
+                  {kidName}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => setFilter('all')}
+              className={`btn ${
+                filter === 'all' ? 'btn-primary' : 'btn-secondary'
+              }`}
+            >
+              All Items ({approvedItems.length})
+            </button>
+            <button
+              onClick={() => setFilter('available')}
+              className={`btn ${
+                filter === 'available' ? 'btn-primary' : 'btn-secondary'
+              }`}
+            >
+              Available (
+              {approvedItems.filter((item) => !isItemReserved(item)).length})
+            </button>
+            <button
+              onClick={() => setFilter('reserved')}
+              className={`btn ${
+                filter === 'reserved' ? 'btn-primary' : 'btn-secondary'
+              }`}
+            >
+              My Reservations ({myReservations.length})
+            </button>
+          </div>
+        </div>
+
+        {filteredItems.length === 0 ? (
+          <div className='empty-state'>
+            <h2>No items found</h2>
+            <p>
+              {filter === 'available' && 'All items have been reserved!'}
+              {filter === 'reserved' && "You haven't reserved any items yet."}
+              {filter === 'all' && 'No approved items available yet.'}
+            </p>
+          </div>
+        ) : (
+          Object.entries(itemsByKid).map(([kidName, kidItems]) => (
+            <div
+              key={kidName}
+              style={{
+                marginBottom: '40px',
+                background: '#FFFFFF',
+                border: '2px solid #e2e8f0',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                overflow: 'hidden',
+              }}
+            >
+              <h2
+                style={{
+                  margin: 0,
+                  color: '#FFFFFF',
+                  background: '#165B33',
+                  padding: '16px 24px',
+                  fontSize: '24px',
+                  fontWeight: 700,
+                }}
+              >
+                {kidName}'s Wishlist
+              </h2>
+
+              <div className='grid grid-3' style={{ padding: '24px' }}>
+                {kidItems.map((item) => {
+                  const reserved = isItemReserved(item);
+                  const myReservation = getMyReservation(item);
+
+                  return (
+                    <div key={item.id} className='item-card'>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          marginBottom: '8px',
+                        }}
+                      >
+                        <h3 style={{ flex: 1 }}>{item.title}</h3>
+                        {reserved && (
+                          <span className='badge badge-reserved'>
+                            {myReservation ? 'Reserved by You' : 'Reserved'}
+                          </span>
+                        )}
+                      </div>
+
+                      {item.description && <p>{item.description}</p>}
+
+                      <div className='price'>${formatCurrency(item.price)}</div>
+
+                      {item.url && (
+                        <a
+                          href={item.url}
+                          target='_blank'
+                          rel='noopener noreferrer'
+                          style={{
+                            color: '#1E7B46',
+                            textDecoration: 'none',
+                            display: 'block',
+                            marginBottom: '12px',
+                          }}
+                        >
+                          View Product →
+                        </a>
+                      )}
+
+                      <div className='item-actions'>
+                        {!reserved && (
+                          <button
+                            onClick={() => handleReserve(item.id)}
+                            className='btn btn-success'
+                            style={{ width: '100%' }}
+                          >
+                            Reserve This Gift
+                          </button>
+                        )}
+
+                        {myReservation && (
+                          <>
+                            {!myReservation.purchased && (
+                              <>
+                                <button
+                                  onClick={() =>
+                                    handleMarkPurchased(myReservation.id)
+                                  }
+                                  className='btn btn-primary'
+                                >
+                                  Mark Purchased
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    handleUnreserve(myReservation.id)
+                                  }
+                                  className='btn btn-secondary'
+                                >
+                                  Unreserve
+                                </button>
+                              </>
+                            )}
+                            {myReservation.purchased && (
+                              <>
+                                <div
+                                  style={{
+                                    background: '#d1fae5',
+                                    padding: '8px',
+                                    textAlign: 'center',
+                                    color: '#065f46',
+                                    fontWeight: 600,
+                                    marginBottom: '8px',
+                                  }}
+                                >
+                                  ✓ Purchased
+                                </div>
+                                <button
+                                  onClick={() =>
+                                    handleMarkNotPurchased(myReservation.id)
+                                  }
+                                  className='btn btn-secondary'
+                                  style={{ width: '100%' }}
+                                >
+                                  Mark as Not Purchased
+                                </button>
+                              </>
+                            )}
+                          </>
+                        )}
+
+                        {reserved && !myReservation && (
+                          <div
+                            style={{
+                              background: '#e2e8f0',
+                              padding: '8px',
+                              textAlign: 'center',
+                              color: '#4a5568',
+                              fontWeight: 600,
+                            }}
+                          >
+                            Reserved by Another Family Member
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </>
+  );
+}

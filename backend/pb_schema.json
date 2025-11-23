@@ -1,0 +1,244 @@
+[
+  {
+    "id": "_pb_users_auth_",
+    "name": "users",
+    "type": "auth",
+    "system": false,
+    "schema": [
+      {
+        "name": "name",
+        "type": "text",
+        "required": true,
+        "options": {
+          "min": 1,
+          "max": 100
+        }
+      },
+      {
+        "name": "role",
+        "type": "select",
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "values": [
+            "parent",
+            "family_member"
+          ]
+        }
+      }
+    ],
+    "listRule": "@request.auth.id != ''",
+    "viewRule": "@request.auth.id != ''",
+    "createRule": "",
+    "updateRule": "@request.auth.id = id",
+    "deleteRule": "@request.auth.role = 'parent'"
+  },
+  {
+    "id": "pbc_children",
+    "name": "children",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "name": "name",
+        "type": "text",
+        "required": true,
+        "options": {
+          "min": 1,
+          "max": 100
+        }
+      },
+      {
+        "name": "parent",
+        "type": "relation",
+        "required": true,
+        "options": {
+          "collectionId": "_pb_users_auth_",
+          "cascadeDelete": true,
+          "minSelect": null,
+          "maxSelect": 1,
+          "displayFields": [
+            "name"
+          ]
+        }
+      },
+      {
+        "name": "age",
+        "type": "number",
+        "required": false,
+        "options": {
+          "min": 0,
+          "max": 18
+        }
+      },
+      {
+        "name": "target_budget",
+        "type": "number",
+        "required": false,
+        "options": {
+          "min": 0
+        }
+      },
+      {
+        "name": "pin",
+        "type": "text",
+        "required": true,
+        "options": {
+          "min": 4,
+          "max": 20
+        }
+      }
+    ],
+    "listRule": "@request.auth.id != ''",
+    "viewRule": "@request.auth.id != ''",
+    "createRule": "@request.auth.role = 'parent'",
+    "updateRule": "@request.auth.role = 'parent'",
+    "deleteRule": "@request.auth.role = 'parent'"
+  },
+  {
+    "id": "pbc_items",
+    "name": "items",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "name": "child",
+        "type": "relation",
+        "required": true,
+        "options": {
+          "collectionId": "pbc_children",
+          "cascadeDelete": true,
+          "minSelect": null,
+          "maxSelect": 1,
+          "displayFields": [
+            "name"
+          ]
+        }
+      },
+      {
+        "name": "title",
+        "type": "text",
+        "required": true,
+        "options": {
+          "min": 1,
+          "max": 200
+        }
+      },
+      {
+        "name": "description",
+        "type": "text",
+        "required": false,
+        "options": {
+          "min": null,
+          "max": 1000
+        }
+      },
+      {
+        "name": "url",
+        "type": "url",
+        "required": false
+      },
+      {
+        "name": "price",
+        "type": "number",
+        "required": true,
+        "options": {
+          "min": 0
+        }
+      },
+      {
+        "name": "image_url",
+        "type": "url",
+        "required": false
+      },
+      {
+        "name": "status",
+        "type": "select",
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "values": [
+            "pending",
+            "approved",
+            "rejected"
+          ]
+        }
+      },
+      {
+        "name": "rejection_reason",
+        "type": "text",
+        "required": false,
+        "options": {
+          "min": null,
+          "max": 500
+        }
+      },
+      {
+        "name": "approved_at",
+        "type": "date",
+        "required": false
+      }
+    ],
+    "listRule": "",
+    "viewRule": "",
+    "createRule": "",
+    "updateRule": "",
+    "deleteRule": ""
+  },
+  {
+    "id": "pbc_reservations",
+    "name": "reservations",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "name": "item",
+        "type": "relation",
+        "required": true,
+        "options": {
+          "collectionId": "pbc_items",
+          "cascadeDelete": true,
+          "minSelect": null,
+          "maxSelect": 1,
+          "displayFields": [
+            "title"
+          ]
+        }
+      },
+      {
+        "name": "reserved_by",
+        "type": "relation",
+        "required": true,
+        "options": {
+          "collectionId": "_pb_users_auth_",
+          "cascadeDelete": true,
+          "minSelect": null,
+          "maxSelect": 1,
+          "displayFields": [
+            "name"
+          ]
+        }
+      },
+      {
+        "name": "purchased",
+        "type": "bool",
+        "required": false,
+        "options": {}
+      },
+      {
+        "name": "notes",
+        "type": "text",
+        "required": false,
+        "options": {
+          "min": null,
+          "max": 500
+        }
+      }
+    ],
+    "listRule": "",
+    "viewRule": "",
+    "createRule": "",
+    "updateRule": "",
+    "deleteRule": ""
+  }
+]

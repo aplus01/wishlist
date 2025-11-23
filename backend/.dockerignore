@@ -1,0 +1,7 @@
+pocketbase
+pb_data/storage/*
+pb_data/backups/*
+pb_data/logs.db*
+.env
+.DS_Store
+*.log
