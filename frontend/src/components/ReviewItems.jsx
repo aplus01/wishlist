@@ -5,6 +5,7 @@ import {
   authStore,
   formatCurrency,
   reservations,
+  getImageUrl,
 } from '../lib/pocketbase';
 
 export default function ReviewItems() {
@@ -426,6 +427,39 @@ export default function ReviewItems() {
         <div className='grid grid-2'>
           {filteredItems.map((item) => (
             <div key={item.id} className='item-card'>
+              {item.image ? (
+                <img
+                  src={getImageUrl(item, item.image, '300x300')}
+                  alt={item.title}
+                  style={{
+                    width: '100%',
+                    height: '200px',
+                    objectFit: 'cover',
+                    borderRadius: '8px',
+                    marginBottom: '12px',
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: '100%',
+                    height: '200px',
+                    background:
+                      'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+                    borderRadius: '8px',
+                    marginBottom: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '64px',
+                  }}
+                >
+                  🎁
+                </div>
+              )}
               <div
                 style={{
                   display: 'flex',
@@ -435,7 +469,23 @@ export default function ReviewItems() {
                   flexWrap: 'wrap',
                 }}
               >
-                <h3 style={{ flex: 1 }}>{item.title}</h3>
+                <h3 style={{ flex: 1 }}>
+                  {item.url ? (
+                    <a
+                      href={item.url}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      style={{
+                        color: '#1E7B46',
+                        textDecoration: 'underline',
+                      }}
+                    >
+                      {item.title}
+                    </a>
+                  ) : (
+                    item.title
+                  )}
+                </h3>
                 {item.from_santa && (
                   <span
                     style={{
@@ -469,22 +519,6 @@ export default function ReviewItems() {
 
               <div className='price'>${formatCurrency(item.price)}</div>
 
-              {item.url && (
-                <a
-                  href={item.url}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  style={{
-                    color: '#1E7B46',
-                    textDecoration: 'none',
-                    display: 'block',
-                    marginBottom: '12px',
-                  }}
-                >
-                  View Product →
-                </a>
-              )}
-
               {(() => {
                 const reservations = item.expand?.reservations_via_item
                   ? Array.isArray(item.expand.reservations_via_item)
@@ -517,14 +551,40 @@ export default function ReviewItems() {
                     <button
                       onClick={() => handleApprove(item.id)}
                       className='btn btn-success'
+                      style={{
+                        width: '40px',
+                        padding: '6px',
+                      }}
+                      title='Approve'
                     >
-                      Approve
+                      <svg
+                        xmlns='http://www.w3.org/2000/svg'
+                        height='18px'
+                        viewBox='0 -960 960 960'
+                        width='18px'
+                        fill='currentColor'
+                      >
+                        <path d='M720-120H280v-520l280-280 50 50q7 7 11.5 19t4.5 23v14l-44 174h258q32 0 56 24t24 56v80q0 7-2 15t-4 15L794-168q-9 20-30 34t-44 14Zm-360-80h360l120-280v-80H480l54-220-174 174v406Zm0-406v406-406Zm-80-34v80H160v360h120v80H80v-520h200Z' />
+                      </svg>
                     </button>
                     <button
                       onClick={() => openRejectModal(item)}
                       className='btn btn-danger'
+                      style={{
+                        width: '40px',
+                        padding: '6px',
+                      }}
+                      title='Reject'
                     >
-                      Reject
+                      <svg
+                        xmlns='http://www.w3.org/2000/svg'
+                        height='18px'
+                        viewBox='0 -960 960 960'
+                        width='18px'
+                        fill='currentColor'
+                      >
+                        <path d='M240-840h440v520L400-40l-50-50q-7-7-11.5-19t-4.5-23v-14l44-174H120q-32 0-56-24t-24-56v-80q0-7 2-15t4-15l120-282q9-20 30-34t44-14Zm360 80H240L120-480v80h360l-54 220 174-174v-406Zm0 406v-406 406Zm80 34v-80h120v-360H680v-80h200v520H680Z' />
+                      </svg>
                     </button>
                   </>
                 )}
@@ -532,8 +592,21 @@ export default function ReviewItems() {
                   <button
                     onClick={() => handleApprove(item.id)}
                     className='btn btn-success'
+                    style={{
+                      width: '40px',
+                      padding: '6px',
+                    }}
+                    title='Approve'
                   >
-                    Approve
+                    <svg
+                      xmlns='http://www.w3.org/2000/svg'
+                      height='18px'
+                      viewBox='0 -960 960 960'
+                      width='18px'
+                      fill='currentColor'
+                    >
+                      <path d='M720-120H280v-520l280-280 50 50q7 7 11.5 19t4.5 23v14l-44 174h258q32 0 56 24t24 56v80q0 7-2 15t-4 15L794-168q-9 20-30 34t-44 14Zm-360-80h360l120-280v-80H480l54-220-174 174v406Zm0-406v406-406Zm-80-34v80H160v360h120v80H80v-520h200Z' />
+                    </svg>
                   </button>
                 )}
                 {(() => {
@@ -604,8 +677,21 @@ export default function ReviewItems() {
                 <button
                   onClick={() => handleDelete(item.id)}
                   className='btn btn-secondary'
+                  style={{
+                    width: '40px',
+                    padding: '6px',
+                  }}
+                  title='Delete'
                 >
-                  Delete
+                  <svg
+                    xmlns='http://www.w3.org/2000/svg'
+                    height='18px'
+                    viewBox='0 -960 960 960'
+                    width='18px'
+                    fill='currentColor'
+                  >
+                    <path d='M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z' />
+                  </svg>
                 </button>
               </div>
             </div>

@@ -202,7 +202,22 @@ export default function WishlistTable({
               </td>
               <td style={{ padding: '12px 16px' }}>
                 <div style={{ fontWeight: 600, marginBottom: '4px' }}>
-                  {item.title}
+                  {item.url ? (
+                    <a
+                      href={item.url}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      style={{
+                        color: '#1E7B46',
+                        textDecoration: 'underline',
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {item.title}
+                    </a>
+                  ) : (
+                    item.title
+                  )}
                 </div>
                 {item.description && (
                   <div
@@ -217,21 +232,6 @@ export default function WishlistTable({
                   >
                     {item.description}
                   </div>
-                )}
-                {item.url && (
-                  <a
-                    href={item.url}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    style={{
-                      color: '#1E7B46',
-                      textDecoration: 'none',
-                      fontSize: '14px',
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    View Product →
-                  </a>
                 )}
               </td>
               <td

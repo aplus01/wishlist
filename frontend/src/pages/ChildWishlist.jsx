@@ -231,189 +231,269 @@ export default function ChildWishlist() {
       </div>
 
       <div className='container'>
-        <div className='stats-grid'>
-          <div className='stat-card'>
-            <h3>Pending</h3>
-            <div className='value'>{pendingItems.length}</div>
-          </div>
-          <div className='stat-card'>
-            <h3>Approved</h3>
-            <div className='value'>{approvedItems.length}</div>
-          </div>
-          <div className='stat-card'>
-            <h3>Total Items</h3>
-            <div className='value'>{wishlistItems.length}</div>
-          </div>
-        </div>
-
         <div
           style={{
+            background: '#FFFFFF',
+            border: '2px solid #e2e8f0',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden',
             marginBottom: '30px',
-            display: 'flex',
-            gap: '12px',
-            flexWrap: 'wrap',
           }}
         >
-          <button
-            onClick={() => {
-              setEditingItem(null);
-              setFormData({
-                title: '',
-                description: '',
-                url: '',
-                price: '',
-                image_url: '',
-              });
-              setShowModal(true);
+          <div
+            style={{
+              background: '#165B33',
+              padding: '20px 24px',
+              color: '#FFFFFF',
             }}
-            className='btn btn-primary'
           >
-            + Add Item to Wishlist
-          </button>
-
-          <button
-            onClick={() => setViewMode(viewMode === 'card' ? 'table' : 'card')}
-            className='btn btn-secondary'
-          >
-            {viewMode === 'card' ? '📋 Table View' : '🎁 Card View'}
-          </button>
-        </div>
-
-        {wishlistItems.length === 0 ? (
-          <div className='empty-state'>
-            <h2>Your wishlist is empty</h2>
-            <p>Add items you'd like for Christmas!</p>
+            <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 700 }}>
+              My Wishlist
+            </h2>
           </div>
-        ) : viewMode === 'table' ? (
-          <WishlistTable
-            items={wishlistItems}
-            onReorder={handleReorder}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onSendToTop={handleSendToTop}
-          />
-        ) : (
-          <div className='grid grid-2'>
-            {wishlistItems.map((item, index) => (
-              <div key={item.id} className='item-card'>
-                {item.image && (
-                  <img
-                    src={getImageUrl(item, item.image, '300x300')}
-                    alt={item.title}
-                    style={{
-                      width: '100%',
-                      height: '200px',
-                      objectFit: 'cover',
-                      borderRadius: '8px',
-                      marginBottom: '12px',
-                    }}
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                )}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    marginBottom: '8px',
-                  }}
-                >
-                  <h3 style={{ flex: 1 }}>{item.title}</h3>
-                  <span className={`badge badge-${item.status}`}>
-                    {item.status}
-                  </span>
-                </div>
 
-                {item.description && <p>{item.description}</p>}
+          <div style={{ padding: '24px' }}>
+            <div
+              style={{
+                marginBottom: '24px',
+                display: 'flex',
+                gap: '12px',
+                flexWrap: 'wrap',
+              }}
+            >
+              <button
+                onClick={() => {
+                  setEditingItem(null);
+                  setFormData({
+                    title: '',
+                    description: '',
+                    url: '',
+                    price: '',
+                    image_url: '',
+                  });
+                  setShowModal(true);
+                }}
+                className='btn btn-primary'
+              >
+                + Add Item to Wishlist
+              </button>
 
-                <div className='price'>${formatCurrency(item.price)}</div>
-
-                {item.url && (
-                  <a
-                    href={item.url}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    style={{
-                      color: '#1E7B46',
-                      textDecoration: 'none',
-                      display: 'block',
-                      marginBottom: '12px',
-                    }}
+              <button
+                onClick={() =>
+                  setViewMode(viewMode === 'card' ? 'table' : 'card')
+                }
+                className='btn btn-secondary'
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+                title={
+                  viewMode === 'card'
+                    ? 'Switch to List View'
+                    : 'Switch to Grid View'
+                }
+              >
+                {viewMode === 'card' ? (
+                  <svg
+                    xmlns='http://www.w3.org/2000/svg'
+                    height='28px'
+                    viewBox='0 -960 960 960'
+                    width='28px'
+                    fill='currentColor'
                   >
-                    View Product →
-                  </a>
-                )}
-
-                <div className='item-actions'>
-                  <button
-                    onClick={() => handleSendToTop(item.id)}
-                    disabled={index === 0}
-                    className='btn btn-primary'
-                    style={{
-                      padding: '10px 14px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      opacity: index === 0 ? 0.5 : 1,
-                      cursor: index === 0 ? 'not-allowed' : 'pointer',
-                    }}
-                    title={index === 0 ? 'Already at top' : 'Send to Top'}
+                    <path d='M280-600v-80h560v80H280Zm0 160v-80h560v80H280Zm0 160v-80h560v80H280ZM160-600q-17 0-28.5-11.5T120-640q0-17 11.5-28.5T160-680q17 0 28.5 11.5T200-640q0 17-11.5 28.5T160-600Zm0 160q-17 0-28.5-11.5T120-480q0-17 11.5-28.5T160-520q17 0 28.5 11.5T200-480q0 17-11.5 28.5T160-440Zm0 160q-17 0-28.5-11.5T120-320q0-17 11.5-28.5T160-360q17 0 28.5 11.5T200-320q0 17-11.5 28.5T160-280Z' />
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns='http://www.w3.org/2000/svg'
+                    height='28px'
+                    viewBox='0 -960 960 960'
+                    width='28px'
+                    fill='currentColor'
                   >
-                    <svg
-                      xmlns='http://www.w3.org/2000/svg'
-                      height='20'
-                      viewBox='0 -960 960 960'
-                      width='20'
-                      fill='currentColor'
+                    <path d='M120-520v-320h320v320H120Zm0 400v-320h320v320H120Zm400-400v-320h320v320H520Zm0 400v-320h320v320H520ZM200-600h160v-160H200v160Zm400 0h160v-160H600v160Zm0 400h160v-160H600v160Zm-400 0h160v-160H200v160Zm400-400Zm0 240Zm-240 0Zm0-240Z' />
+                  </svg>
+                )}
+              </button>
+            </div>
+
+            {wishlistItems.length === 0 ? (
+              <div className='empty-state'>
+                <h2>Your wishlist is empty</h2>
+                <p>Add items you'd like for Christmas!</p>
+              </div>
+            ) : viewMode === 'table' ? (
+              <WishlistTable
+                items={wishlistItems}
+                onReorder={handleReorder}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onSendToTop={handleSendToTop}
+              />
+            ) : (
+              <div className='grid grid-2'>
+                {wishlistItems.map((item, index) => (
+                  <div key={item.id} className='item-card'>
+                    {item.image ? (
+                      <img
+                        src={getImageUrl(item, item.image, '300x300')}
+                        alt={item.title}
+                        style={{
+                          width: '100%',
+                          height: '200px',
+                          objectFit: 'cover',
+                          borderRadius: '8px',
+                          marginBottom: '12px',
+                        }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: '100%',
+                          height: '200px',
+                          background:
+                            'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+                          borderRadius: '8px',
+                          marginBottom: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '64px',
+                        }}
+                      >
+                        🎁
+                      </div>
+                    )}
+                    <div
                       style={{
-                        display: 'block',
-                        transform: 'translateY(2px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        marginBottom: '8px',
                       }}
                     >
-                      <path d='M480-544 328-392l-56-56 208-208 208 208-56 56-152-152Zm0-240L328-632l-56-56 208-208 208 208-56 56-152-152Z' />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => handleEdit(item)}
-                    disabled={item.status === 'approved'}
-                    className='btn btn-secondary'
-                    style={{
-                      opacity: item.status === 'approved' ? 0.5 : 1,
-                      cursor:
-                        item.status === 'approved' ? 'not-allowed' : 'pointer',
-                    }}
-                    title={
-                      item.status === 'approved'
-                        ? 'Cannot edit approved items'
-                        : 'Edit item'
-                    }
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    disabled={item.status === 'approved'}
-                    className='btn btn-danger'
-                    style={{
-                      opacity: item.status === 'approved' ? 0.5 : 1,
-                      cursor:
-                        item.status === 'approved' ? 'not-allowed' : 'pointer',
-                    }}
-                    title={
-                      item.status === 'approved'
-                        ? 'Cannot delete approved items'
-                        : 'Delete item'
-                    }
-                  >
-                    Delete
-                  </button>
-                </div>
+                      <h3>
+                        {item.url ? (
+                          <a
+                            href={item.url}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            style={{
+                              color: '#1E7B46',
+                              textDecoration: 'underline',
+                            }}
+                          >
+                            {item.title}
+                          </a>
+                        ) : (
+                          item.title
+                        )}
+                      </h3>
+                    </div>
+
+                    {item.description && <p>{item.description}</p>}
+
+                    <div className='price'>${formatCurrency(item.price)}</div>
+
+                    <div className='item-actions'>
+                      <button
+                        onClick={() => handleSendToTop(item.id)}
+                        disabled={index === 0}
+                        className='btn btn-primary'
+                        style={{
+                          width: '40px',
+                          padding: '6px',
+                          opacity: index === 0 ? 0.5 : 1,
+                          cursor: index === 0 ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        title={index === 0 ? 'Already at top' : 'Send to Top'}
+                      >
+                        <svg
+                          xmlns='http://www.w3.org/2000/svg'
+                          height='24'
+                          viewBox='0 -960 960 960'
+                          width='24'
+                          fill='currentColor'
+                          style={{
+                            display: 'block',
+                            transform: 'translateY(2px)',
+                          }}
+                        >
+                          <path d='M480-544 328-392l-56-56 208-208 208 208-56 56-152-152Zm0-240L328-632l-56-56 208-208 208 208-56 56-152-152Z' />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleEdit(item)}
+                        disabled={item.status === 'approved'}
+                        className='btn btn-secondary'
+                        style={{
+                          width: '40px',
+                          padding: '6px',
+                          opacity: item.status === 'approved' ? 0.5 : 1,
+                          cursor:
+                            item.status === 'approved'
+                              ? 'not-allowed'
+                              : 'pointer',
+                        }}
+                        title={
+                          item.status === 'approved'
+                            ? 'Cannot edit approved items'
+                            : 'Edit item'
+                        }
+                      >
+                        <svg
+                          xmlns='http://www.w3.org/2000/svg'
+                          height='24'
+                          viewBox='0 -960 960 960'
+                          width='24'
+                          fill='currentColor'
+                        >
+                          <path d='M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z' />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        disabled={item.status === 'approved'}
+                        className='btn btn-danger'
+                        style={{
+                          width: '40px',
+                          padding: '6px',
+                          opacity: item.status === 'approved' ? 0.5 : 1,
+                          cursor:
+                            item.status === 'approved'
+                              ? 'not-allowed'
+                              : 'pointer',
+                        }}
+                        title={
+                          item.status === 'approved'
+                            ? 'Cannot delete approved items'
+                            : 'Delete item'
+                        }
+                      >
+                        <svg
+                          xmlns='http://www.w3.org/2000/svg'
+                          height='24'
+                          viewBox='0 -960 960 960'
+                          width='24'
+                          fill='currentColor'
+                        >
+                          <path d='M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z' />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {showModal && (

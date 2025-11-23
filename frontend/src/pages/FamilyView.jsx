@@ -5,6 +5,7 @@ import {
   items as itemsAPI,
   reservations as reservationsAPI,
   formatCurrency,
+  getImageUrl,
 } from '../lib/pocketbase';
 
 export default function FamilyView() {
@@ -314,6 +315,39 @@ export default function FamilyView() {
 
                   return (
                     <div key={item.id} className='item-card'>
+                      {item.image ? (
+                        <img
+                          src={getImageUrl(item, item.image, '300x300')}
+                          alt={item.title}
+                          style={{
+                            width: '100%',
+                            height: '200px',
+                            objectFit: 'cover',
+                            borderRadius: '8px',
+                            marginBottom: '12px',
+                          }}
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: '100%',
+                            height: '200px',
+                            background:
+                              'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+                            borderRadius: '8px',
+                            marginBottom: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '64px',
+                          }}
+                        >
+                          🎁
+                        </div>
+                      )}
                       <div
                         style={{
                           display: 'flex',
@@ -322,7 +356,23 @@ export default function FamilyView() {
                           marginBottom: '8px',
                         }}
                       >
-                        <h3 style={{ flex: 1 }}>{item.title}</h3>
+                        <h3 style={{ flex: 1 }}>
+                          {item.url ? (
+                            <a
+                              href={item.url}
+                              target='_blank'
+                              rel='noopener noreferrer'
+                              style={{
+                                color: '#1E7B46',
+                                textDecoration: 'underline',
+                              }}
+                            >
+                              {item.title}
+                            </a>
+                          ) : (
+                            item.title
+                          )}
+                        </h3>
                         {reserved && (
                           <span className='badge badge-reserved'>
                             {myReservation ? 'Reserved by You' : 'Reserved'}
@@ -333,22 +383,6 @@ export default function FamilyView() {
                       {item.description && <p>{item.description}</p>}
 
                       <div className='price'>${formatCurrency(item.price)}</div>
-
-                      {item.url && (
-                        <a
-                          href={item.url}
-                          target='_blank'
-                          rel='noopener noreferrer'
-                          style={{
-                            color: '#1E7B46',
-                            textDecoration: 'none',
-                            display: 'block',
-                            marginBottom: '12px',
-                          }}
-                        >
-                          View Product →
-                        </a>
-                      )}
 
                       <div className='item-actions'>
                         {!reserved && (
