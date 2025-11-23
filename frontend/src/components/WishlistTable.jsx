@@ -1,7 +1,13 @@
 import { useState } from 'react';
-import { formatCurrency } from '../lib/pocketbase';
+import { formatCurrency, getImageUrl } from '../lib/pocketbase';
 
-export default function WishlistTable({ items, onReorder, onEdit, onDelete }) {
+export default function WishlistTable({
+  items,
+  onReorder,
+  onEdit,
+  onDelete,
+  onSendToTop,
+}) {
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
 
@@ -82,6 +88,16 @@ export default function WishlistTable({ items, onReorder, onEdit, onDelete }) {
                 padding: '12px 16px',
                 textAlign: 'left',
                 fontWeight: 600,
+                width: '80px',
+              }}
+            >
+              Image
+            </th>
+            <th
+              style={{
+                padding: '12px 16px',
+                textAlign: 'left',
+                fontWeight: 600,
               }}
             >
               Item
@@ -119,25 +135,25 @@ export default function WishlistTable({ items, onReorder, onEdit, onDelete }) {
           </tr>
         </thead>
         <tbody>
-          {items.map((item, index) => (
+          {items.map((item, itemIndex) => (
             <tr
               key={item.id}
               draggable
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragOver={(e) => handleDragOver(e, index)}
+              onDragStart={(e) => handleDragStart(e, itemIndex)}
+              onDragOver={(e) => handleDragOver(e, itemIndex)}
               onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, index)}
+              onDrop={(e) => handleDrop(e, itemIndex)}
               onDragEnd={handleDragEnd}
               style={{
                 borderBottom: '1px solid #e5e7eb',
                 cursor: 'grab',
                 background:
-                  dragOverIndex === index
+                  dragOverIndex === itemIndex
                     ? '#f0fdf4'
-                    : draggedIndex === index
+                    : draggedIndex === itemIndex
                     ? '#f3f4f6'
                     : 'white',
-                opacity: draggedIndex === index ? 0.5 : 1,
+                opacity: draggedIndex === itemIndex ? 0.5 : 1,
                 transition: 'background 0.2s',
               }}
             >
@@ -148,7 +164,41 @@ export default function WishlistTable({ items, onReorder, onEdit, onDelete }) {
                   fontWeight: 600,
                 }}
               >
-                {index + 1}
+                {itemIndex + 1}
+              </td>
+              <td style={{ padding: '12px 16px' }}>
+                {item.image ? (
+                  <img
+                    src={getImageUrl(item, item.image, '100x100')}
+                    alt={item.title}
+                    style={{
+                      width: '60px',
+                      height: '60px',
+                      objectFit: 'cover',
+                      borderRadius: '4px',
+                      border: '1px solid #e5e7eb',
+                    }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: '60px',
+                      height: '60px',
+                      background: '#f3f4f6',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#9ca3af',
+                      fontSize: '24px',
+                    }}
+                  >
+                    🎁
+                  </div>
+                )}
               </td>
               <td style={{ padding: '12px 16px' }}>
                 <div style={{ fontWeight: 600, marginBottom: '4px' }}>
@@ -199,42 +249,89 @@ export default function WishlistTable({ items, onReorder, onEdit, onDelete }) {
                 </span>
               </td>
               <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                {item.status === 'pending' && (
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: '8px',
-                      justifyContent: 'center',
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: '8px',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSendToTop(item.id);
                     }}
+                    disabled={itemIndex === 0}
+                    className='btn btn-primary'
+                    style={{
+                      padding: '8px 12px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: itemIndex === 0 ? 0.5 : 1,
+                      cursor: itemIndex === 0 ? 'not-allowed' : 'pointer',
+                    }}
+                    title={itemIndex === 0 ? 'Already at top' : 'Send to Top'}
                   >
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEdit(item);
-                      }}
-                      className='btn btn-secondary'
+                    <svg
+                      xmlns='http://www.w3.org/2000/svg'
+                      height='18'
+                      viewBox='0 -960 960 960'
+                      width='18'
+                      fill='currentColor'
                       style={{
-                        padding: '6px 12px',
-                        fontSize: '14px',
+                        display: 'block',
+                        transform: 'translateY(2px)',
                       }}
                     >
-                      Edit
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(item.id);
-                      }}
-                      className='btn btn-danger'
-                      style={{
-                        padding: '6px 12px',
-                        fontSize: '14px',
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                )}
+                      <path d='M480-544 328-392l-56-56 208-208 208 208-56 56-152-152Zm0-240L328-632l-56-56 208-208 208 208-56 56-152-152Z' />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(item);
+                    }}
+                    disabled={item.status === 'approved'}
+                    className='btn btn-secondary'
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '14px',
+                      opacity: item.status === 'approved' ? 0.5 : 1,
+                      cursor:
+                        item.status === 'approved' ? 'not-allowed' : 'pointer',
+                    }}
+                    title={
+                      item.status === 'approved'
+                        ? 'Cannot edit approved items'
+                        : 'Edit item'
+                    }
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(item.id);
+                    }}
+                    disabled={item.status === 'approved'}
+                    className='btn btn-danger'
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '14px',
+                      opacity: item.status === 'approved' ? 0.5 : 1,
+                      cursor:
+                        item.status === 'approved' ? 'not-allowed' : 'pointer',
+                    }}
+                    title={
+                      item.status === 'approved'
+                        ? 'Cannot delete approved items'
+                        : 'Delete item'
+                    }
+                  >
+                    Delete
+                  </button>
+                </div>
               </td>
             </tr>
           ))}

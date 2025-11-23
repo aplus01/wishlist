@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { auth, items, formatCurrency } from '../lib/pocketbase';
+import { auth, items, formatCurrency, getImageUrl } from '../lib/pocketbase';
 import WishlistTable from '../components/WishlistTable';
 
 export default function ChildWishlist() {
@@ -15,7 +15,9 @@ export default function ChildWishlist() {
     description: '',
     url: '',
     price: '',
+    image_url: '',
   });
+  const [scrapingImage, setScrapingImage] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -55,10 +57,14 @@ export default function ChildWishlist() {
         price: parseFloat(formData.price),
       };
 
+      console.log('Submitting item with data:', itemData);
+
       if (editingItem) {
-        await items.update(editingItem.id, itemData);
+        const result = await items.update(editingItem.id, itemData);
+        console.log('Update result:', result);
       } else {
-        await items.create(itemData);
+        const result = await items.create(itemData);
+        console.log('Create result:', result);
       }
 
       setShowModal(false);
@@ -68,6 +74,7 @@ export default function ChildWishlist() {
         description: '',
         url: '',
         price: '',
+        image_url: '',
       });
       loadData();
     } catch (err) {
@@ -83,6 +90,7 @@ export default function ChildWishlist() {
       description: item.description || '',
       url: item.url || '',
       price: item.price.toString(),
+      image_url: item.image_url || '',
     });
     setShowModal(true);
   };
@@ -96,6 +104,30 @@ export default function ChildWishlist() {
         console.error('Error deleting item:', err);
         alert('Failed to delete item. Please try again.');
       }
+    }
+  };
+
+  const handleScrapeImage = async () => {
+    if (!formData.url) {
+      alert('Please enter a product URL first.');
+      return;
+    }
+
+    setScrapingImage(true);
+    try {
+      const imageUrl = await items.scrapeImage(formData.url);
+      if (imageUrl) {
+        setFormData({ ...formData, image_url: imageUrl });
+      } else {
+        alert(
+          'Could not find an image on that page. You can enter an image URL manually.'
+        );
+      }
+    } catch (err) {
+      console.error('Error scraping image:', err);
+      alert('Failed to scrape image. You can enter an image URL manually.');
+    } finally {
+      setScrapingImage(false);
     }
   };
 
@@ -125,6 +157,48 @@ export default function ChildWishlist() {
       console.error('Error reordering items:', err);
       alert('Failed to reorder items. Please try again.');
       // Reload on error to revert optimistic update
+      loadData();
+    }
+  };
+
+  const handleSendToTop = async (itemId) => {
+    try {
+      // Find the item and move it to priority 0, shift others down
+      const updates = wishlistItems.map((item, index) => {
+        if (item.id === itemId) {
+          return { id: item.id, priority: 0 };
+        } else {
+          return { id: item.id, priority: index + 1 };
+        }
+      });
+
+      // Optimistically update local state
+      const updatedItems = [...wishlistItems];
+      const itemToMove = updatedItems.find((i) => i.id === itemId);
+      const otherItems = updatedItems.filter((i) => i.id !== itemId);
+
+      if (itemToMove) {
+        itemToMove.priority = 0;
+        otherItems.forEach((item, index) => {
+          item.priority = index + 1;
+        });
+        const newOrder = [itemToMove, ...otherItems];
+        console.log(
+          'New order after send to top:',
+          newOrder.map((i) => ({
+            id: i.id,
+            title: i.title,
+            priority: i.priority,
+          }))
+        );
+        setWishlistItems(newOrder);
+      }
+
+      // Save to backend
+      await items.bulkUpdatePriorities(updates);
+    } catch (err) {
+      console.error('Error sending item to top:', err);
+      alert('Failed to move item to top. Please try again.');
       loadData();
     }
   };
@@ -188,6 +262,7 @@ export default function ChildWishlist() {
                 description: '',
                 url: '',
                 price: '',
+                image_url: '',
               });
               setShowModal(true);
             }}
@@ -215,11 +290,28 @@ export default function ChildWishlist() {
             onReorder={handleReorder}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onSendToTop={handleSendToTop}
           />
         ) : (
           <div className='grid grid-2'>
-            {wishlistItems.map((item) => (
+            {wishlistItems.map((item, index) => (
               <div key={item.id} className='item-card'>
+                {item.image && (
+                  <img
+                    src={getImageUrl(item, item.image, '300x300')}
+                    alt={item.title}
+                    style={{
+                      width: '100%',
+                      height: '200px',
+                      objectFit: 'cover',
+                      borderRadius: '8px',
+                      marginBottom: '12px',
+                    }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                )}
                 <div
                   style={{
                     display: 'flex',
@@ -254,22 +346,70 @@ export default function ChildWishlist() {
                   </a>
                 )}
 
-                {item.status === 'pending' && (
-                  <div className='item-actions'>
-                    <button
-                      onClick={() => handleEdit(item)}
-                      className='btn btn-secondary'
+                <div className='item-actions'>
+                  <button
+                    onClick={() => handleSendToTop(item.id)}
+                    disabled={index === 0}
+                    className='btn btn-primary'
+                    style={{
+                      padding: '10px 14px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: index === 0 ? 0.5 : 1,
+                      cursor: index === 0 ? 'not-allowed' : 'pointer',
+                    }}
+                    title={index === 0 ? 'Already at top' : 'Send to Top'}
+                  >
+                    <svg
+                      xmlns='http://www.w3.org/2000/svg'
+                      height='20'
+                      viewBox='0 -960 960 960'
+                      width='20'
+                      fill='currentColor'
+                      style={{
+                        display: 'block',
+                        transform: 'translateY(2px)',
+                      }}
                     >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(item.id)}
-                      className='btn btn-danger'
-                    >
-                      Delete
-                    </button>
-                  </div>
-                )}
+                      <path d='M480-544 328-392l-56-56 208-208 208 208-56 56-152-152Zm0-240L328-632l-56-56 208-208 208 208-56 56-152-152Z' />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleEdit(item)}
+                    disabled={item.status === 'approved'}
+                    className='btn btn-secondary'
+                    style={{
+                      opacity: item.status === 'approved' ? 0.5 : 1,
+                      cursor:
+                        item.status === 'approved' ? 'not-allowed' : 'pointer',
+                    }}
+                    title={
+                      item.status === 'approved'
+                        ? 'Cannot edit approved items'
+                        : 'Edit item'
+                    }
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    disabled={item.status === 'approved'}
+                    className='btn btn-danger'
+                    style={{
+                      opacity: item.status === 'approved' ? 0.5 : 1,
+                      cursor:
+                        item.status === 'approved' ? 'not-allowed' : 'pointer',
+                    }}
+                    title={
+                      item.status === 'approved'
+                        ? 'Cannot delete approved items'
+                        : 'Delete item'
+                    }
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -331,6 +471,85 @@ export default function ChildWishlist() {
                   }
                   placeholder='https://...'
                 />
+              </div>
+
+              <div className='input-group'>
+                <label>Image URL (optional)</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type='url'
+                    value={formData.image_url}
+                    onChange={(e) =>
+                      setFormData({ ...formData, image_url: e.target.value })
+                    }
+                    placeholder='https://...'
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type='button'
+                    onClick={handleScrapeImage}
+                    disabled={!formData.url || scrapingImage}
+                    className='btn btn-secondary'
+                    style={{ whiteSpace: 'nowrap' }}
+                  >
+                    {scrapingImage ? 'Scraping...' : '🔍 Auto-find'}
+                  </button>
+                </div>
+                <p
+                  style={{
+                    fontSize: '12px',
+                    color: '#6b7280',
+                    marginTop: '4px',
+                    marginBottom: '8px',
+                  }}
+                >
+                  💡 Tip: Images are automatically downloaded and saved
+                </p>
+                {editingItem?.image && (
+                  <div style={{ marginTop: '8px' }}>
+                    <p
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        marginBottom: '4px',
+                      }}
+                    >
+                      Current image:
+                    </p>
+                    <img
+                      src={getImageUrl(
+                        editingItem,
+                        editingItem.image,
+                        '300x300'
+                      )}
+                      alt='Current'
+                      style={{
+                        width: '100%',
+                        maxHeight: '200px',
+                        objectFit: 'contain',
+                        borderRadius: '4px',
+                        border: '1px solid #e5e7eb',
+                      }}
+                    />
+                  </div>
+                )}
+                {formData.image_url && !editingItem?.image && (
+                  <img
+                    src={formData.image_url}
+                    alt='Preview'
+                    style={{
+                      width: '100%',
+                      maxHeight: '200px',
+                      objectFit: 'contain',
+                      marginTop: '8px',
+                      borderRadius: '4px',
+                      border: '1px solid #e5e7eb',
+                    }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                )}
               </div>
 
               <div className='modal-actions'>

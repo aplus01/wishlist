@@ -12,6 +12,16 @@ export const formatCurrency = (amount) => {
   });
 };
 
+// Utility function to get image URL from PocketBase record
+export const getImageUrl = (record, filename, size = '300x300') => {
+  if (!record || !filename) return null;
+  // If size is specified and available, use thumbnail
+  if (size) {
+    return pb.files.getUrl(record, filename, { thumb: size });
+  }
+  return pb.files.getUrl(record, filename);
+};
+
 // Enable auto cancellation for duplicate requests
 pb.autoCancellation(false);
 
@@ -166,14 +176,67 @@ export const items = {
       }
     });
 
-    return pb.collection('items').create({
-      status: 'pending',
-      priority: maxPriority + 1,
-      ...data,
-    });
+    // Handle image download if image_url is provided
+    const formData = new FormData();
+    formData.append('status', 'pending');
+    formData.append('priority', maxPriority + 1);
+
+    let hasImage = false;
+    for (const [key, value] of Object.entries(data)) {
+      if (key === 'image_url' && value) {
+        // Download and upload image
+        console.log('Downloading image for upload...');
+        const imageFile = await items.downloadImage(value);
+        if (imageFile) {
+          console.log('Appending image file to formData:', imageFile);
+          formData.append('image', imageFile);
+          hasImage = true;
+        } else {
+          console.error('Failed to download image');
+        }
+      } else if (key !== 'image_url') {
+        formData.append(key, value);
+      }
+    }
+
+    console.log('Creating item with formData, hasImage:', hasImage);
+    const result = await pb.collection('items').create(formData);
+    console.log('Created item:', result);
+    return result;
   },
 
   update: async (id, data) => {
+    // Handle image download if image_url is provided
+    if (data.image_url) {
+      const formData = new FormData();
+
+      let hasImage = false;
+      for (const [key, value] of Object.entries(data)) {
+        if (key === 'image_url' && value) {
+          // Download and upload image
+          console.log('Downloading image for update...');
+          const imageFile = await items.downloadImage(value);
+          if (imageFile) {
+            console.log(
+              'Appending image file to formData for update:',
+              imageFile
+            );
+            formData.append('image', imageFile);
+            hasImage = true;
+          } else {
+            console.error('Failed to download image for update');
+          }
+        } else if (key !== 'image_url') {
+          formData.append(key, value);
+        }
+      }
+
+      console.log('Updating item with formData, hasImage:', hasImage);
+      const result = await pb.collection('items').update(id, formData);
+      console.log('Updated item:', result);
+      return result;
+    }
+
     return pb.collection('items').update(id, data);
   },
 
@@ -230,6 +293,181 @@ export const items = {
     }
 
     return updates.length;
+  },
+
+  // Download image from URL and return as blob
+  downloadImage: async (imageUrl) => {
+    console.log('Attempting to download image from:', imageUrl);
+    try {
+      // Try with CORS proxy first
+      const proxies = [
+        (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+        (url) => url, // Try direct as fallback
+      ];
+
+      for (const proxy of proxies) {
+        try {
+          const proxyUrl = proxy(imageUrl);
+          console.log('Trying proxy:', proxyUrl);
+          const response = await fetch(proxyUrl);
+          console.log('Response status:', response.status, response.ok);
+
+          if (!response.ok) continue;
+
+          const blob = await response.blob();
+          console.log('Downloaded blob:', blob.size, 'bytes, type:', blob.type);
+
+          // Get file extension from URL or content type
+          const contentType = blob.type || 'image/jpeg';
+          const ext = contentType.split('/')[1] || 'jpg';
+          const filename = `product-${Date.now()}.${ext}`;
+
+          const file = new File([blob], filename, { type: contentType });
+          console.log('Created file:', file.name, file.size, file.type);
+          return file;
+        } catch (err) {
+          console.error('Download attempt failed:', err);
+          continue;
+        }
+      }
+
+      console.error('All download attempts failed');
+      return null;
+    } catch (err) {
+      console.error('Error downloading image:', err);
+      return null;
+    }
+  },
+
+  // Scrape image from URL using Open Graph tags
+  scrapeImage: async (url) => {
+    // Try multiple CORS proxies
+    const proxies = [
+      (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+      (url) =>
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+    ];
+
+    for (const proxy of proxies) {
+      try {
+        const response = await fetch(proxy(url), {
+          headers: {
+            Accept: 'text/html',
+          },
+        });
+
+        if (!response.ok) continue;
+
+        const html = await response.text();
+
+        // Create a temporary DOM element to parse HTML
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+
+        // Try Open Graph image first (most reliable)
+        let imageUrl = doc.querySelector('meta[property="og:image"]')?.content;
+
+        // Try Twitter card image
+        if (!imageUrl) {
+          imageUrl = doc.querySelector('meta[name="twitter:image"]')?.content;
+        }
+
+        // Try product schema image
+        if (!imageUrl) {
+          const productSchemas = doc.querySelectorAll(
+            'script[type="application/ld+json"]'
+          );
+          for (const schema of productSchemas) {
+            try {
+              const data = JSON.parse(schema.textContent);
+              if (data.image) {
+                imageUrl = Array.isArray(data.image)
+                  ? data.image[0]
+                  : data.image;
+                if (imageUrl) break;
+              }
+            } catch {}
+          }
+        }
+
+        // For Amazon specifically, look for main product image
+        if (!imageUrl && url.includes('amazon.com')) {
+          // Amazon uses specific IDs for main product images
+          const mainImage = doc.querySelector(
+            '#landingImage, #imgBlkFront, #main-image, img[data-a-image-name="landingImage"]'
+          );
+          if (mainImage) {
+            imageUrl =
+              mainImage.src ||
+              mainImage.getAttribute('data-old-hires') ||
+              mainImage.getAttribute('data-a-dynamic-image');
+            // data-a-dynamic-image contains JSON with image URLs
+            if (imageUrl && imageUrl.startsWith('{')) {
+              try {
+                const imageData = JSON.parse(imageUrl);
+                imageUrl = Object.keys(imageData)[0]; // Get first (largest) image
+              } catch {}
+            }
+          }
+        }
+
+        // Try looking for large product images (common pattern)
+        if (!imageUrl) {
+          const imgs = doc.querySelectorAll('img[src], img[data-src]');
+          for (const img of imgs) {
+            const src =
+              img.src ||
+              img.getAttribute('data-src') ||
+              img.getAttribute('data-lazy-src');
+            // Skip tracking pixels, icons, and logos - look for actual product images
+            if (
+              src &&
+              !src.includes('1x1') &&
+              !src.includes('pixel') &&
+              !src.includes('icon') &&
+              !src.includes('logo') &&
+              !src.includes('csi') &&
+              !src.includes('tracking') &&
+              !src.includes('sprite') &&
+              src.length > 50 &&
+              (src.includes('image') ||
+                src.includes('product') ||
+                src.includes('media'))
+            ) {
+              imageUrl = src;
+              break;
+            }
+          }
+        }
+
+        if (imageUrl) {
+          // Make sure image URL is absolute
+          if (imageUrl.startsWith('//')) {
+            imageUrl = 'https:' + imageUrl;
+          } else if (imageUrl.startsWith('/')) {
+            const urlObj = new URL(url);
+            imageUrl = urlObj.origin + imageUrl;
+          }
+
+          // Final validation - skip if looks like a tracking pixel
+          if (
+            imageUrl.includes('1x1') ||
+            imageUrl.includes('pixel') ||
+            imageUrl.includes('csi')
+          ) {
+            continue;
+          }
+
+          return imageUrl;
+        }
+      } catch (err) {
+        console.error('Proxy failed:', err);
+        continue;
+      }
+    }
+
+    console.error('Could not find image for URL:', url);
+    return null;
   },
 };
 
