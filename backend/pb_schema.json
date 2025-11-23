@@ -147,9 +147,23 @@
         }
       },
       {
-        "name": "image_url",
-        "type": "url",
-        "required": false
+        "name": "image",
+        "type": "file",
+        "required": false,
+        "options": {
+          "maxSelect": 1,
+          "maxSize": 5242880,
+          "mimeTypes": [
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "image/webp"
+          ],
+          "thumbs": [
+            "100x100",
+            "300x300"
+          ]
+        }
       },
       {
         "name": "status",
