@@ -123,17 +123,18 @@ export const children = {
 
 export const items = {
   list: async (filters = {}) => {
-    const filterStr = Object.entries(filters)
-      .map(([key, value]) => `${key} = "${value}"`)
-      .join(' && ');
-
     const options = {
-      expand: 'child,reservations_via_item,reservations_via_item.reserved_by',
+      expand: 'child,parent,reservations_via_item,reservations_via_item.reserved_by',
       sort: '-created',
     };
 
-    if (filterStr) {
-      options.filter = filterStr;
+    // Build filter using PocketBase's filter builder for safety
+    if (Object.keys(filters).length > 0) {
+      const filterConditions = Object.entries(filters).map(([key, value]) => {
+        return `${key} = {:${key}}`;
+      });
+      const filterStr = filterConditions.join(' && ');
+      options.filter = pb.filter(filterStr, filters);
     }
 
     const results = await pb.collection('items').getFullList(options);
@@ -153,15 +154,30 @@ export const items = {
   listApproved: async () => {
     return pb.collection('items').getFullList({
       filter: 'status = "approved"',
-      expand: 'child,reservations_via_item,reservations_via_item.reserved_by',
+      expand: 'child,parent,reservations_via_item,reservations_via_item.reserved_by',
       sort: '-approved_at',
     });
   },
 
   create: async (data) => {
-    // Get all items for this child to find max priority
+    // Validation: must have exactly one of child or parent
+    if (!data.child && !data.parent) {
+      throw new Error('Item must have either a child or parent');
+    }
+    if (data.child && data.parent) {
+      throw new Error('Item cannot have both child and parent');
+    }
+
+    // Get all items for this child/parent to find max priority
+    let filterExpression;
+    if (data.child) {
+      filterExpression = pb.filter('child = {:childId}', { childId: data.child });
+    } else {
+      filterExpression = pb.filter('parent = {:parentId}', { parentId: data.parent });
+    }
+
     const existingItems = await pb.collection('items').getFullList({
-      filter: pb.filter('child = {:childId}', { childId: data.child }),
+      filter: filterExpression,
     });
 
     // Find max priority, handling items that might not have priority set
@@ -178,7 +194,15 @@ export const items = {
 
     // Handle image download if image_url is provided
     const formData = new FormData();
-    formData.append('status', 'pending');
+
+    // Auto-approve parent items, pending for child items
+    if (data.parent) {
+      formData.append('status', 'approved');
+      formData.append('approved_at', new Date().toISOString());
+    } else {
+      formData.append('status', 'pending');
+    }
+
     formData.append('priority', maxPriority + 1);
 
     let hasImage = false;
@@ -203,6 +227,15 @@ export const items = {
     const result = await pb.collection('items').create(formData);
     console.log('Created item:', result);
     return result;
+  },
+
+  // Helper function for creating parent wishlist items
+  createParentItem: async (parentId, itemData) => {
+    return items.create({
+      ...itemData,
+      parent: parentId,
+      from_santa: false, // Parent items are not secret gifts
+    });
   },
 
   update: async (id, data) => {

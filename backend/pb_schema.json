@@ -180,11 +180,27 @@
         "id": "grgcpyjf",
         "name": "child",
         "type": "relation",
-        "required": true,
+        "required": false,
         "presentable": false,
         "unique": false,
         "options": {
           "collectionId": "pbc_children",
+          "cascadeDelete": false,
+          "minSelect": null,
+          "maxSelect": 1,
+          "displayFields": null
+        }
+      },
+      {
+        "system": false,
+        "id": "parent_fld",
+        "name": "parent",
+        "type": "relation",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "collectionId": "_pb_users_auth_",
           "cascadeDelete": false,
           "minSelect": null,
           "maxSelect": 1,

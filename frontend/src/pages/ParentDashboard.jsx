@@ -4,6 +4,7 @@ import ManageChildren from '../components/ManageChildren';
 import ReviewItems from '../components/ReviewItems';
 import EquityDashboard from '../components/EquityDashboard';
 import ManageFamily from '../components/ManageFamily';
+import ParentWishlist from './ParentWishlist';
 
 export default function ParentDashboard() {
   const location = useLocation();
@@ -43,11 +44,17 @@ export default function ParentDashboard() {
             >
               Equity Dashboard
             </Link>
-            <Link 
-              to="/parent/family" 
+            <Link
+              to="/parent/family"
               className={isActive('/parent/family') ? 'active' : ''}
             >
               Family Members
+            </Link>
+            <Link
+              to="/parent/wishlist"
+              className={isActive('/parent/wishlist') ? 'active' : ''}
+            >
+              My Wishlist
             </Link>
             <button onClick={handleLogout} className="btn btn-secondary">
               Logout
@@ -62,6 +69,7 @@ export default function ParentDashboard() {
           <Route path="review" element={<ReviewItems />} />
           <Route path="equity" element={<EquityDashboard />} />
           <Route path="family" element={<ManageFamily />} />
+          <Route path="wishlist" element={<ParentWishlist />} />
         </Routes>
       </div>
     </>

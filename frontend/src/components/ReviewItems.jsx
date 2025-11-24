@@ -229,8 +229,14 @@ export default function ReviewItems() {
     return statusMatch && matchesFilters(item);
   });
 
-  const getKidName = (childId) => {
-    const child = childrenList.find((c) => c.id === childId);
+  const getPersonName = (item) => {
+    // Check if item belongs to parent
+    if (item.parent) {
+      return item.expand?.parent?.name || 'Unknown Parent';
+    }
+
+    // Otherwise, it's a child item
+    const child = childrenList.find((c) => c.id === item.child);
     return child?.name || 'Unknown';
   };
 
@@ -741,7 +747,7 @@ export default function ReviewItems() {
                         color: '#1E7B46',
                       }}
                     >
-                      {getKidName(item.child)}
+                      {getPersonName(item)}
                     </td>
                     <td
                       style={{

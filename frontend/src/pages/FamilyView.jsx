@@ -183,8 +183,8 @@ export default function FamilyView() {
 
   // Filter by kid first
   const itemsFilteredByKid = approvedItems.filter((item) => {
-    const kidName = item.expand?.child?.name || 'Unknown';
-    return kidFilter === 'all' || kidName === kidFilter;
+    const personName = item.expand?.child?.name || item.expand?.parent?.name || 'Unknown';
+    return kidFilter === 'all' || personName === kidFilter;
   });
 
   // Calculate counts based on kid filter
@@ -205,18 +205,18 @@ export default function FamilyView() {
     return statusMatch;
   });
 
-  // Group items by kid
+  // Group items by person (kid or parent)
   const itemsByKid = filteredItems.reduce((acc, item) => {
-    const kidName = item.expand?.child?.name || 'Unknown';
-    if (!acc[kidName]) acc[kidName] = [];
-    acc[kidName].push(item);
+    const personName = item.expand?.child?.name || item.expand?.parent?.name || 'Unknown';
+    if (!acc[personName]) acc[personName] = [];
+    acc[personName].push(item);
     return acc;
   }, {});
 
-  // Get unique kid names for filter dropdown
+  // Get unique person names (kids and parents) for filter dropdown
   const allKidNames = [
     ...new Set(
-      approvedItems.map((item) => item.expand?.child?.name || 'Unknown')
+      approvedItems.map((item) => item.expand?.child?.name || item.expand?.parent?.name || 'Unknown')
     ),
   ].sort();
 

@@ -41,8 +41,8 @@ export default function ChildWishlist() {
       await items.fixMissingPriorities(childId);
 
       const itemsList = await items.list({ child: childId });
-      // Filter out "from Santa" items - kids shouldn't see these
-      const visibleItems = itemsList.filter((item) => !item.from_santa);
+      // Filter out "from Santa" items and parent items - kids shouldn't see these
+      const visibleItems = itemsList.filter((item) => !item.from_santa && !item.parent && item.child === childId);
       setWishlistItems(visibleItems);
     } catch (err) {
       console.error('Error loading data:', err);

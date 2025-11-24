@@ -39,9 +39,12 @@ export default function EquityDashboard() {
     return <div>Loading...</div>;
   }
 
+  // Filter out parent items - only include items that belong to children for equity calculations
+  const childItemsOnly = allItems.filter(item => item.child && !item.parent);
+
   // Calculate stats for each child
   const childStats = childrenList.map((child) => {
-    const childItems = allItems.filter((item) => item.child === child.id);
+    const childItems = childItemsOnly.filter((item) => item.child === child.id);
     const approvedItems = childItems.filter(
       (item) => item.status === 'approved'
     );
