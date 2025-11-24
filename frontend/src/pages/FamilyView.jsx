@@ -223,26 +223,50 @@ export default function FamilyView() {
             >
               Filter by Kid:
             </label>
-            <select
-              value={kidFilter}
-              onChange={(e) => setKidFilter(e.target.value)}
-              style={{
-                padding: '10px 16px',
-                fontSize: '16px',
-                border: '2px solid #165B33',
-                background: 'white',
-                color: '#165B33',
-                cursor: 'pointer',
-                minWidth: '200px',
-              }}
-            >
-              <option value='all'>All Kids</option>
-              {allKidNames.map((kidName) => (
-                <option key={kidName} value={kidName}>
-                  {kidName}
-                </option>
-              ))}
-            </select>
+            <div style={{ position: 'relative', minWidth: '200px' }}>
+              <select
+                value={kidFilter}
+                onChange={(e) => setKidFilter(e.target.value)}
+                style={{
+                  padding: '10px 16px',
+                  paddingRight: '40px',
+                  fontSize: '16px',
+                  border: '1px solid var(--green-dark)',
+                  borderRadius: '0',
+                  background: 'white',
+                  color: 'var(--green-dark)',
+                  cursor: 'pointer',
+                  width: '100%',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'none',
+                  outline: 'none',
+                }}
+              >
+                <option value='all'>All Kids</option>
+                {allKidNames.map((kidName) => (
+                  <option key={kidName} value={kidName}>
+                    {kidName}
+                  </option>
+                ))}
+              </select>
+              <svg
+                xmlns='http://www.w3.org/2000/svg'
+                height='24'
+                viewBox='0 -960 960 960'
+                width='24'
+                fill='var(--green-dark)'
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  pointerEvents: 'none',
+                }}
+              >
+                <path d='M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z' />
+              </svg>
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
@@ -290,7 +314,7 @@ export default function FamilyView() {
               style={{
                 marginBottom: '40px',
                 background: '#FFFFFF',
-                border: '2px solid #e2e8f0',
+                border: '1px solid #e2e8f0',
                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                 overflow: 'hidden',
               }}

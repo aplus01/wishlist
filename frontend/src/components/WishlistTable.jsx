@@ -57,19 +57,24 @@ export default function WishlistTable({
   };
 
   return (
-    <div style={{ overflowX: 'auto' }}>
+    <div
+      style={{
+        overflowX: 'auto',
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+        border: '1px solid #d4d4d4',
+      }}
+    >
       <table
         style={{
           width: '100%',
           borderCollapse: 'collapse',
           background: 'white',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
         }}
       >
         <thead>
           <tr
             style={{
-              background: '#165B33',
+              background: 'var(--green-medium)',
               color: 'white',
             }}
           >
@@ -111,16 +116,6 @@ export default function WishlistTable({
               }}
             >
               Price
-            </th>
-            <th
-              style={{
-                padding: '12px 16px',
-                textAlign: 'center',
-                fontWeight: 600,
-                width: '100px',
-              }}
-            >
-              Status
             </th>
             <th
               style={{
@@ -244,11 +239,6 @@ export default function WishlistTable({
                 ${formatCurrency(item.price)}
               </td>
               <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                <span className={`badge badge-${item.status}`}>
-                  {item.status}
-                </span>
-              </td>
-              <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                 <div
                   style={{
                     display: 'flex',
@@ -293,13 +283,30 @@ export default function WishlistTable({
                       onEdit(item);
                     }}
                     disabled={item.status === 'approved'}
-                    className='btn btn-secondary'
+                    className='btn'
                     style={{
-                      padding: '6px 12px',
-                      fontSize: '14px',
+                      padding: '8px 12px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                       opacity: item.status === 'approved' ? 0.5 : 1,
                       cursor:
                         item.status === 'approved' ? 'not-allowed' : 'pointer',
+                      background: 'transparent',
+                      color: 'var(--edit-btn)',
+                      border: '1px solid var(--edit-btn)',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (item.status !== 'approved') {
+                        e.currentTarget.style.background = 'var(--edit-btn)';
+                        e.currentTarget.style.color = '#ffffff';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (item.status !== 'approved') {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.color = 'var(--edit-btn)';
+                      }
                     }}
                     title={
                       item.status === 'approved'
@@ -307,7 +314,15 @@ export default function WishlistTable({
                         : 'Edit item'
                     }
                   >
-                    Edit
+                    <svg
+                      xmlns='http://www.w3.org/2000/svg'
+                      height='18'
+                      viewBox='0 -960 960 960'
+                      width='18'
+                      fill='currentColor'
+                    >
+                      <path d='M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z' />
+                    </svg>
                   </button>
                   <button
                     onClick={(e) => {
@@ -315,13 +330,30 @@ export default function WishlistTable({
                       onDelete(item.id);
                     }}
                     disabled={item.status === 'approved'}
-                    className='btn btn-danger'
+                    className='btn'
                     style={{
-                      padding: '6px 12px',
-                      fontSize: '14px',
+                      padding: '8px 12px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                       opacity: item.status === 'approved' ? 0.5 : 1,
                       cursor:
                         item.status === 'approved' ? 'not-allowed' : 'pointer',
+                      background: 'transparent',
+                      color: '#C41E3A',
+                      border: '1px solid #C41E3A',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (item.status !== 'approved') {
+                        e.currentTarget.style.background = '#C41E3A';
+                        e.currentTarget.style.color = '#ffffff';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (item.status !== 'approved') {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.color = '#C41E3A';
+                      }
                     }}
                     title={
                       item.status === 'approved'
@@ -329,7 +361,15 @@ export default function WishlistTable({
                         : 'Delete item'
                     }
                   >
-                    Delete
+                    <svg
+                      xmlns='http://www.w3.org/2000/svg'
+                      height='18'
+                      viewBox='0 -960 960 960'
+                      width='18'
+                      fill='currentColor'
+                    >
+                      <path d='M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z' />
+                    </svg>
                   </button>
                 </div>
               </td>

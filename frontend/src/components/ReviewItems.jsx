@@ -268,31 +268,56 @@ export default function ReviewItems() {
                 display: 'block',
                 marginBottom: '8px',
                 fontWeight: 600,
-                color: '#165B33',
+                color: 'var(--green-dark)',
               }}
             >
               Kid:
             </label>
-            <select
-              value={kidFilter}
-              onChange={(e) => setKidFilter(e.target.value)}
-              style={{
-                padding: '10px 16px',
-                fontSize: '16px',
-                border: '2px solid #165B33',
-                background: 'white',
-                color: '#165B33',
-                cursor: 'pointer',
-                width: '100%',
-              }}
-            >
-              <option value='all'>All Kids</option>
-              {childrenList.map((kid) => (
-                <option key={kid.id} value={kid.id}>
-                  {kid.name}
-                </option>
-              ))}
-            </select>
+            <div style={{ position: 'relative' }}>
+              <select
+                value={kidFilter}
+                onChange={(e) => setKidFilter(e.target.value)}
+                style={{
+                  padding: '10px 16px',
+                  paddingRight: '40px',
+                  fontSize: '16px',
+                  border: '1px solid var(--green-dark)',
+                  borderRadius: '0',
+                  background: 'white',
+                  color: 'var(--green-dark)',
+                  cursor: 'pointer',
+                  width: '100%',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'none',
+                  outline: 'none',
+                }}
+              >
+                <option value='all'>All Kids</option>
+                {childrenList.map((kid) => (
+                  <option key={kid.id} value={kid.id}>
+                    {kid.name}
+                  </option>
+                ))}
+              </select>
+              <svg
+                xmlns='http://www.w3.org/2000/svg'
+                height='24px'
+                viewBox='0 0 24 24'
+                width='24px'
+                fill='var(--green-dark)'
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  pointerEvents: 'none',
+                }}
+              >
+                <path d='M0 0h24v24H0V0z' fill='none' />
+                <path d='M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z' />
+              </svg>
+            </div>
           </div>
 
           <div style={{ flex: '1 1 200px' }}>
@@ -301,28 +326,53 @@ export default function ReviewItems() {
                 display: 'block',
                 marginBottom: '8px',
                 fontWeight: 600,
-                color: '#165B33',
+                color: 'var(--green-dark)',
               }}
             >
               Reservation:
             </label>
-            <select
-              value={reservationFilter}
-              onChange={(e) => setReservationFilter(e.target.value)}
-              style={{
-                padding: '10px 16px',
-                fontSize: '16px',
-                border: '2px solid #165B33',
-                background: 'white',
-                color: '#165B33',
-                cursor: 'pointer',
-                width: '100%',
-              }}
-            >
-              <option value='all'>All</option>
-              <option value='reserved'>Reserved</option>
-              <option value='not_reserved'>Not Reserved</option>
-            </select>
+            <div style={{ position: 'relative' }}>
+              <select
+                value={reservationFilter}
+                onChange={(e) => setReservationFilter(e.target.value)}
+                style={{
+                  padding: '10px 16px',
+                  paddingRight: '40px',
+                  fontSize: '16px',
+                  border: '1px solid var(--green-dark)',
+                  borderRadius: '0',
+                  background: 'white',
+                  color: 'var(--green-dark)',
+                  cursor: 'pointer',
+                  width: '100%',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'none',
+                  outline: 'none',
+                }}
+              >
+                <option value='all'>All</option>
+                <option value='reserved'>Reserved</option>
+                <option value='not_reserved'>Not Reserved</option>
+              </select>
+              <svg
+                xmlns='http://www.w3.org/2000/svg'
+                height='24px'
+                viewBox='0 0 24 24'
+                width='24px'
+                fill='var(--green-dark)'
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  pointerEvents: 'none',
+                }}
+              >
+                <path d='M0 0h24v24H0V0z' fill='none' />
+                <path d='M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z' />
+              </svg>
+            </div>
           </div>
 
           <div style={{ flex: '1 1 200px' }}>
@@ -331,28 +381,53 @@ export default function ReviewItems() {
                 display: 'block',
                 marginBottom: '8px',
                 fontWeight: 600,
-                color: '#165B33',
+                color: 'var(--green-dark)',
               }}
             >
               Purchase:
             </label>
-            <select
-              value={purchaseFilter}
-              onChange={(e) => setPurchaseFilter(e.target.value)}
-              style={{
-                padding: '10px 16px',
-                fontSize: '16px',
-                border: '2px solid #165B33',
-                background: 'white',
-                color: '#165B33',
-                cursor: 'pointer',
-                width: '100%',
-              }}
-            >
-              <option value='all'>All</option>
-              <option value='purchased'>Purchased</option>
-              <option value='not_purchased'>Not Purchased</option>
-            </select>
+            <div style={{ position: 'relative' }}>
+              <select
+                value={purchaseFilter}
+                onChange={(e) => setPurchaseFilter(e.target.value)}
+                style={{
+                  padding: '10px 16px',
+                  paddingRight: '40px',
+                  fontSize: '16px',
+                  border: '1px solid var(--green-dark)',
+                  borderRadius: '0',
+                  background: 'white',
+                  color: 'var(--green-dark)',
+                  cursor: 'pointer',
+                  width: '100%',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'none',
+                  outline: 'none',
+                }}
+              >
+                <option value='all'>All</option>
+                <option value='purchased'>Purchased</option>
+                <option value='not_purchased'>Not Purchased</option>
+              </select>
+              <svg
+                xmlns='http://www.w3.org/2000/svg'
+                height='24px'
+                viewBox='0 0 24 24'
+                width='24px'
+                fill='var(--green-dark)'
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  pointerEvents: 'none',
+                }}
+              >
+                <path d='M0 0h24v24H0V0z' fill='none' />
+                <path d='M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z' />
+              </svg>
+            </div>
           </div>
         </div>
 
@@ -426,7 +501,7 @@ export default function ReviewItems() {
       ) : (
         <div className='grid grid-2'>
           {filteredItems.map((item) => (
-            <div key={item.id} className='item-card'>
+            <div key={item.id} className='item-card card-bordered'>
               {item.image ? (
                 <img
                   src={getImageUrl(item, item.image, '300x300')}
@@ -676,10 +751,13 @@ export default function ReviewItems() {
                 })()}
                 <button
                   onClick={() => handleDelete(item.id)}
-                  className='btn btn-secondary'
+                  className='btn'
                   style={{
                     width: '40px',
                     padding: '6px',
+                    background: 'var(--red-light)',
+                    color: 'var(--red-dark)',
+                    border: '1px solid var(--red-dark)',
                   }}
                   title='Delete'
                 >
@@ -688,7 +766,7 @@ export default function ReviewItems() {
                     height='18px'
                     viewBox='0 -960 960 960'
                     width='18px'
-                    fill='currentColor'
+                    fill='var(--red-dark)'
                   >
                     <path d='M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z' />
                   </svg>

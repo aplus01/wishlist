@@ -234,7 +234,7 @@ export default function ChildWishlist() {
         <div
           style={{
             background: '#FFFFFF',
-            border: '2px solid #e2e8f0',
+            border: '1px solid #e2e8f0',
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
             overflow: 'hidden',
             marginBottom: '30px',
@@ -242,7 +242,7 @@ export default function ChildWishlist() {
         >
           <div
             style={{
-              background: '#165B33',
+              background: 'var(--container-header-bg-color)',
               padding: '20px 24px',
               color: '#FFFFFF',
             }}
@@ -432,7 +432,7 @@ export default function ChildWishlist() {
                       <button
                         onClick={() => handleEdit(item)}
                         disabled={item.status === 'approved'}
-                        className='btn btn-secondary'
+                        className='btn'
                         style={{
                           width: '40px',
                           padding: '6px',
@@ -441,6 +441,22 @@ export default function ChildWishlist() {
                             item.status === 'approved'
                               ? 'not-allowed'
                               : 'pointer',
+                          background: 'transparent',
+                          color: 'var(--edit-btn)',
+                          border: '1px solid var(--edit-btn)',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (item.status !== 'approved') {
+                            e.currentTarget.style.background =
+                              'var(--edit-btn)';
+                            e.currentTarget.style.color = '#ffffff';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (item.status !== 'approved') {
+                            e.currentTarget.style.background = 'transparent';
+                            e.currentTarget.style.color = 'var(--edit-btn)';
+                          }
                         }}
                         title={
                           item.status === 'approved'
@@ -461,7 +477,7 @@ export default function ChildWishlist() {
                       <button
                         onClick={() => handleDelete(item.id)}
                         disabled={item.status === 'approved'}
-                        className='btn btn-danger'
+                        className='btn'
                         style={{
                           width: '40px',
                           padding: '6px',
@@ -470,6 +486,21 @@ export default function ChildWishlist() {
                             item.status === 'approved'
                               ? 'not-allowed'
                               : 'pointer',
+                          background: 'transparent',
+                          color: '#C41E3A',
+                          border: '1px solid #C41E3A',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (item.status !== 'approved') {
+                            e.currentTarget.style.background = '#C41E3A';
+                            e.currentTarget.style.color = '#ffffff';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (item.status !== 'approved') {
+                            e.currentTarget.style.background = 'transparent';
+                            e.currentTarget.style.color = '#C41E3A';
+                          }
                         }}
                         title={
                           item.status === 'approved'
@@ -522,22 +553,26 @@ export default function ChildWishlist() {
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  placeholder='Tell us why you want this...'
+                  placeholder='Include important details like size, color, model number, etc.'
                 />
               </div>
 
               <div className='input-group'>
                 <label>Price *</label>
                 <input
-                  type='number'
-                  step='0.01'
-                  min='0'
+                  type='text'
+                  inputMode='decimal'
                   value={formData.price}
-                  onChange={(e) =>
-                    setFormData({ ...formData, price: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9.]/g, '');
+                    setFormData({ ...formData, price: value });
+                  }}
                   required
-                  placeholder='0.00'
+                  placeholder='$0.00'
+                  style={{
+                    appearance: 'none',
+                    MozAppearance: 'textfield',
+                  }}
                 />
               </div>
 

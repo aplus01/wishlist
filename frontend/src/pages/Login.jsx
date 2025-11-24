@@ -43,7 +43,7 @@ export default function Login() {
 
     try {
       // Find the selected parent's email
-      const selectedParent = parents.find(p => p.id === selectedParentId);
+      const selectedParent = parents.find((p) => p.id === selectedParentId);
       if (!selectedParent) {
         throw new Error('Please select a parent account');
       }
@@ -59,20 +59,24 @@ export default function Login() {
 
   if (loadingParents) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '20px'
-      }}>
-        <div className="card" style={{ maxWidth: '500px', width: '100%' }}>
-          <h1 style={{
-            textAlign: 'center',
-            color: '#165B33',
-            marginBottom: '30px',
-            fontSize: '32px'
-          }}>
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px',
+        }}
+      >
+        <div className='card' style={{ maxWidth: '500px', width: '100%' }}>
+          <h1
+            style={{
+              textAlign: 'center',
+              color: '#165B33',
+              marginBottom: '30px',
+              fontSize: '32px',
+            }}
+          >
             🎄 Christmas Wishlist
           </h1>
           <p style={{ textAlign: 'center' }}>Loading...</p>
@@ -82,73 +86,103 @@ export default function Login() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px'
-    }}>
-      <div className="card" style={{ maxWidth: '500px', width: '100%' }}>
-        <h1 style={{
-          textAlign: 'center',
-          color: '#165B33',
-          marginBottom: '30px',
-          fontSize: '32px'
-        }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+      }}
+    >
+      <div className='card' style={{ maxWidth: '500px', width: '100%' }}>
+        <h1
+          style={{
+            textAlign: 'center',
+            color: '#165B33',
+            marginBottom: '30px',
+            fontSize: '32px',
+          }}
+        >
           🎄 Christmas Wishlist
         </h1>
 
-        <h2 style={{
-          textAlign: 'center',
-          marginBottom: '30px',
-          fontSize: '20px',
-          color: '#2D3748'
-        }}>
+        <h2
+          style={{
+            textAlign: 'center',
+            marginBottom: '30px',
+            fontSize: '20px',
+            color: '#2D3748',
+          }}
+        >
           Parent Login
         </h2>
 
-        {error && <div className="error-message">{error}</div>}
+        {error && <div className='error-message'>{error}</div>}
 
         <form onSubmit={handleSubmit}>
-          <div className="input-group">
+          <div className='input-group'>
             <label>Parent Name</label>
-            <select
-              value={selectedParentId}
-              onChange={(e) => setSelectedParentId(e.target.value)}
-              required
-              style={{
-                width: '100%',
-                padding: '12px',
-                fontSize: '16px',
-                border: '1px solid #CBD5E0',
-                borderRadius: '8px',
-                background: 'white'
-              }}
-            >
-              <option value="">Select parent...</option>
-              {parents.map(parent => (
-                <option key={parent.id} value={parent.id}>
-                  {parent.name || parent.email}
-                </option>
-              ))}
-            </select>
+            <div style={{ position: 'relative' }}>
+              <select
+                value={selectedParentId}
+                onChange={(e) => setSelectedParentId(e.target.value)}
+                required
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  paddingRight: '40px',
+                  fontSize: '16px',
+                  border: '1px solid var(--green-dark)',
+                  borderRadius: '0',
+                  background: 'white',
+                  color: 'var(--green-dark)',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'none',
+                  outline: 'none',
+                }}
+              >
+                <option value=''>Select parent...</option>
+                {parents.map((parent) => (
+                  <option key={parent.id} value={parent.id}>
+                    {parent.name || parent.email}
+                  </option>
+                ))}
+              </select>
+              <svg
+                xmlns='http://www.w3.org/2000/svg'
+                height='24'
+                viewBox='0 -960 960 960'
+                width='24'
+                fill='var(--green-dark)'
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  pointerEvents: 'none',
+                }}
+              >
+                <path d='M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z' />
+              </svg>
+            </div>
           </div>
 
-          <div className="input-group">
+          <div className='input-group'>
             <label>Password</label>
             <input
-              type="password"
+              type='password'
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              placeholder="••••••••"
+              placeholder='••••••••'
             />
           </div>
 
           <button
-            type="submit"
-            className="btn btn-primary"
+            type='submit'
+            className='btn btn-primary'
             style={{ width: '100%', marginTop: '20px' }}
             disabled={loading}
           >
@@ -156,19 +190,24 @@ export default function Login() {
           </button>
         </form>
 
-        <div style={{
-          marginTop: '30px',
-          padding: '16px',
-          background: '#F8F4E3',
-          borderRadius: '8px'
-        }}>
-          <p style={{
-            fontSize: '14px',
-            color: '#2D3748',
-            margin: 0,
-            lineHeight: '1.5'
-          }}>
-            <strong>Kids & Family:</strong> Use your personal login link to access your wishlist.
+        <div
+          style={{
+            marginTop: '30px',
+            padding: '16px',
+            background: '#F8F4E3',
+            borderRadius: '8px',
+          }}
+        >
+          <p
+            style={{
+              fontSize: '14px',
+              color: '#2D3748',
+              margin: 0,
+              lineHeight: '1.5',
+            }}
+          >
+            <strong>Kids & Family:</strong> Use your personal login link to
+            access your wishlist.
           </p>
         </div>
       </div>
