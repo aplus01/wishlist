@@ -40,27 +40,38 @@
 
 ```
 1. Child Login
-   └─> Child enters ID + PIN
-       └─> Verified against Children collection
-           └─> Session created
+   └─> Parent shares Child ID + PIN credentials
+       └─> Child enters credentials at login page
+           └─> Verified against Children collection
+               └─> Session created with child auth
 
 2. Add Item
-   └─> Child fills form (title, price, description, etc.)
-       └─> POST to /api/collections/items/records
-           └─> Item created with status="pending"
-               └─> Linked to child record
+   └─> Child fills form (title, price, description, URL, image)
+       └─> POST to /api/collections/pbc_items/records
+           └─> Item created with status="pending" and priority order
+               └─> Linked to child record via child_id
+                   └─> Optional image upload
 
-3. Parent Review
-   └─> Parent sees item in "Review Items"
-       └─> Approves item
-           └─> PATCH to /api/collections/items/records/{id}
-               └─> status="approved", approved_at=now()
+3. Manage Priority
+   └─> Child can drag-and-drop items to reorder
+       └─> PATCH priority field on reorder
+           └─> "Send to Top" button for quick priority boost
 
-4. Family View
-   └─> Family member sees approved item
-       └─> GET /api/collections/items/records
+4. Parent Review
+   └─> Parent sees all items in "Review Items"
+       └─> Filter by child, reservation status, purchase status
+           └─> Approves item
+               └─> PATCH to /api/collections/pbc_items/records/{id}
+                   └─> status="approved", approved_at=now()
+           └─> Or rejects with reason
+               └─> status="rejected", rejection_reason="..."
+
+5. Family View
+   └─> Family member accesses personalized route (e.g., /grandma)
+       └─> GET /api/collections/pbc_items/records
            └─> Filter: status="approved"
-               └─> Item appears in family view
+               └─> Expand: reservations_via_item
+                   └─> Item appears in family view organized by child
 ```
 
 ### Reserving a Gift (Family Member)
@@ -88,57 +99,67 @@
 
 ```
 ┌──────────────┐
-│    users     │
+│    users     │  (Extended PocketBase auth)
 ├──────────────┤
 │ id           │◄──────────┐
 │ email        │           │
 │ password     │           │ parent
 │ name         │           │
-│ role         │           │
+│ role         │           │ (parent/family_member)
+│ route        │           │ (custom login path for family)
 └──────────────┘           │
                            │
 ┌──────────────┐           │
-│   children   │           │
+│ pbc_children │           │
 ├──────────────┤           │
 │ id           │◄──────────┘
-│ name         │           │
-│ age          │           │
-│ pin          │           │
-│ target_budget│           │
-└──────┬───────┘           │
-       │                   │
-       │ child             │
-       │                   │
-┌──────▼───────┐           │
-│    items     │           │
-├──────────────┤           │
-│ id           │◄──────────┘
-│ title        │
-│ description  │
-│ url          │
-│ price        │
-│ image_url    │
-│ status       │
-│ rejection_   │
-│   reason     │
-│ approved_at  │
+│ parent       │           (relation to users)
+│ name         │
+│ age          │           (optional)
+│ pin          │           (4-6 digit auth)
+│ target_budget│           (optional, for equity tracking)
+│ created      │
+│ updated      │
 └──────┬───────┘
        │
-       │ item
+       │ child
        │
-┌──────▼───────────┐
-│  reservations    │
-├──────────────────┤
-│ id               │
-│ reserved_by      │─────┐
+┌──────▼───────┐
+│  pbc_items   │
+├──────────────┤
+│ id           │
+│ child        │◄─────────┐ (relation to pbc_children)
+│ title        │          │
+│ description  │          │
+│ url          │          │
+│ price        │          │
+│ image        │          │ (file field, actual upload)
+│ status       │          │ (pending/approved/rejected)
+│ rejection_   │          │
+│   reason     │          │
+│ approved_at  │          │
+│ priority     │          │ (drag-and-drop order)
+│ created      │          │
+│ updated      │          │
+└──────┬───────┘          │
+       │                  │
+       │ item             │
+       │                  │
+┌──────▼───────────┐      │
+│ pbc_reservations │      │
+├──────────────────┤      │
+│ id               │      │
+│ item             │──────┘ (relation to pbc_items)
+│ user             │─────┐  (relation to users)
 │ purchased        │     │
-│ notes            │     │
+│ notes            │     │  (optional)
+│ created          │     │
+│ updated          │     │
 └──────────────────┘     │
-                         │
-                         │ reserved_by
                          │
                     ┌────▼─────┐
                     │  users   │
+                    │ (family) │
                     └──────────┘
 ```
 
@@ -192,31 +213,43 @@ App.jsx
 ├─> BrowserRouter
     ├─> Routes
         ├─> Login.jsx
-        │   └─> Multi-role login form
+        │   └─> Multi-role login (Parent or Child with ID + PIN)
         │
-        ├─> FamilySignup.jsx
-        │   └─> Registration form
-        │
-        ├─> ParentDashboard.jsx
+        ├─> ParentDashboard.jsx (Protected Route)
+        │   ├─> Header + Navigation
         │   ├─> ManageChildren.jsx
-        │   │   └─> Child CRUD + credentials
+        │   │   └─> Child CRUD + PIN credentials display
         │   ├─> ReviewItems.jsx
-        │   │   └─> Approve/reject workflow
+        │   │   ├─> Custom select dropdowns (child, reservation, purchase filters)
+        │   │   └─> Approve/reject/delete workflow
         │   ├─> EquityDashboard.jsx
-        │   │   └─> Balance tracking
+        │   │   └─> Balance tracking + fairness metrics
         │   └─> ManageFamily.jsx
-        │       └─> Family member list
+        │       └─> Family member list with custom routes
         │
-        ├─> ChildWishlist.jsx
-        │   └─> Item CRUD + status display
+        ├─> ChildWishlist.jsx (Protected Route)
+        │   ├─> WishlistTable.jsx (Table view with drag-and-drop)
+        │   │   └─> Edit/Delete/Send-to-Top actions
+        │   └─> Card view with drag-and-drop reordering
+        │       └─> Status badges + item actions
         │
-        └─> FamilyView.jsx
-            └─> Browse + reserve items
+        └─> FamilyView.jsx (Dynamic Route: /:route)
+            ├─> Filter by child dropdown
+            ├─> Filter by status buttons
+            └─> Item cards with Reserve/Unreserve/Purchase actions
+
+Components (Reusable):
+├─> EquityDashboard.jsx - Shows gift equity across children
+├─> ManageChildren.jsx - CRUD for children with PIN management
+├─> ManageFamily.jsx - Manage family members with custom routes
+├─> ReviewItems.jsx - Parent approval interface with filters
+└─> WishlistTable.jsx - Drag-and-drop table for wishlist items
 ```
 
 ## Security Model
 
 ### Authentication
+
 ```
 PocketBase Auth Store
 ├─> JWT Token (stored in localStorage)
@@ -225,57 +258,102 @@ PocketBase Auth Store
 ```
 
 ### Authorization (Row-Level Security)
+
 ```
-Items Collection Rules:
-├─> listRule: 
+pbc_items Collection Rules:
+├─> listRule:
 │   └─> Parents: all items
-│   └─> Children: only their items
-│   └─> Family: only approved items
+│   └─> Children: only their items (child = @request.auth.id)
+│   └─> Family: only approved items (status = 'approved')
 │
 ├─> createRule:
-│   └─> Only children can create
+│   └─> Only authenticated children
+│   └─> Must set child = @request.auth.id
 │
 ├─> updateRule:
 │   └─> Parents: all items
-│   └─> Children: own pending items
+│   └─> Children: own pending items only
 │
 └─> deleteRule:
     └─> Parents: all items
-    └─> Children: own pending items
+    └─> Children: own pending items only
+
+pbc_reservations Collection Rules:
+├─> listRule:
+│   └─> Parents: all reservations
+│   └─> Family: only own reservations (user = @request.auth.id)
+│   └─> Children: none
+│
+├─> createRule:
+│   └─> Only family members (role = 'family_member')
+│   └─> Must set user = @request.auth.id
+│
+├─> updateRule:
+│   └─> Only own reservations (user = @request.auth.id)
+│
+└─> deleteRule:
+    └─> Only own reservations (user = @request.auth.id)
+
+pbc_children Collection Rules:
+├─> listRule:
+│   └─> Parents: only their children (parent = @request.auth.id)
+│
+├─> createRule:
+│   └─> Only parents (role = 'parent')
+│   └─> Must set parent = @request.auth.id
+│
+├─> updateRule:
+│   └─> Only parent who created the child
+│
+└─> deleteRule:
+    └─> Only parent who created the child
 ```
 
 ## API Endpoints (PocketBase)
 
 ```
 Authentication
-POST   /api/collections/users/auth-with-password
+POST   /api/collections/users/auth-with-password        (Parent, Family Member)
+POST   /api/collections/pbc_children/auth-with-password (Child with ID + PIN)
 
-Users
+Users (Parents & Family Members)
 GET    /api/collections/users/records
 POST   /api/collections/users/records
 PATCH  /api/collections/users/records/:id
 DELETE /api/collections/users/records/:id
 
 Children
-GET    /api/collections/children/records
-POST   /api/collections/children/records
-PATCH  /api/collections/children/records/:id
-DELETE /api/collections/children/records/:id
+GET    /api/collections/pbc_children/records
+POST   /api/collections/pbc_children/records
+PATCH  /api/collections/pbc_children/records/:id
+DELETE /api/collections/pbc_children/records/:id
 
-Items
-GET    /api/collections/items/records
-POST   /api/collections/items/records
-PATCH  /api/collections/items/records/:id
-DELETE /api/collections/items/records/:id
+Items (Wishlist)
+GET    /api/collections/pbc_items/records
+       ?filter=status='approved'                        (Family view)
+       ?filter=child='CHILD_ID'                         (Child's items)
+       ?expand=child,reservations_via_item             (With relations)
+POST   /api/collections/pbc_items/records              (Child creates)
+PATCH  /api/collections/pbc_items/records/:id          (Update/Approve/Reject)
+DELETE /api/collections/pbc_items/records/:id          (Delete item)
 
 Reservations
-GET    /api/collections/reservations/records
-POST   /api/collections/reservations/records
-PATCH  /api/collections/reservations/records/:id
-DELETE /api/collections/reservations/records/:id
+GET    /api/collections/pbc_reservations/records
+       ?filter=user='USER_ID'                          (My reservations)
+       ?expand=item,item.child                         (With relations)
+POST   /api/collections/pbc_reservations/records       (Reserve gift)
+PATCH  /api/collections/pbc_reservations/records/:id   (Mark purchased)
+DELETE /api/collections/pbc_reservations/records/:id   (Unreserve)
+
+File Uploads
+POST   /api/files                                      (Upload item images)
+GET    /api/files/pbc_items/:id/:filename             (Retrieve images)
+       ?thumb=100x100                                  (Thumbnail)
 
 Real-time
-WS     /api/realtime
+WS     /api/realtime                                   (Live updates)
+       - Subscribe to pbc_items changes
+       - Subscribe to pbc_reservations changes
 ```
 
 ## State Management
@@ -299,7 +377,38 @@ Real-time Subscriptions
 └─> Reservations collection changes
 ```
 
-## Deployment Architecture (Production)
+## Deployment Architecture
+
+### Docker Deployment (Recommended)
+
+```
+┌──────────────────────────────────────┐
+│         Docker Compose               │
+├──────────────────────────────────────┤
+│                                      │
+│  ┌────────────────┐  ┌────────────┐ │
+│  │   Frontend     │  │  Backend   │ │
+│  │   Container    │  │  Container │ │
+│  │   (Nginx)      │  │(PocketBase)│ │
+│  │   Port 80      │  │  Port 8090 │ │
+│  └───────┬────────┘  └─────┬──────┘ │
+│          │                 │        │
+│          │   Docker Network│        │
+│          └────────┬────────┘        │
+│                   │                 │
+│          ┌────────▼────────┐        │
+│          │ pocketbase-data │        │
+│          │  (Volume)       │        │
+│          └─────────────────┘        │
+└──────────────────────────────────────┘
+
+User → http://localhost → Nginx
+                           ├─> / → React App
+                           ├─> /api/ → PocketBase
+                           └─> /_/ → PocketBase Admin
+```
+
+### Separate Hosting (Alternative)
 
 ```
 ┌────────────────┐
@@ -317,12 +426,46 @@ Real-time Subscriptions
     ┌────────▼────────┐
     │  PocketBase VPS │  Your server
     │  (Backend)      │  Railway/Render/DO
+    │                 │  With volume mount
     └─────────────────┘
 ```
 
+## Design System Architecture
+
+```
+CSS Variables (Root Level)
+├─> Colors
+│   ├─> --green-dark (#3d5a40)
+│   ├─> --green-medium (#6b8a6e)
+│   ├─> --green-light (#c4d5c5)
+│   ├─> --red-dark (#c41e3a)
+│   ├─> --red-medium (#d85971)
+│   ├─> --red-light (#ffd6d6)
+│   ├─> --gold (#d4af37)
+│   └─> --cream (#f8f4e3)
+│
+├─> Functional Colors
+│   ├─> --edit-btn (#5d4037)
+│   ├─> --delete-btn (var(--red-dark))
+│   ├─> --header-bg-color (var(--green-dark))
+│   └─> --heading-font-color (var(--green-dark))
+│
+└─> Component Classes
+    ├─> .card (base card styling)
+    ├─> .card-bordered (1px border)
+    ├─> .btn-primary (gold buttons)
+    ├─> .btn-secondary (stroked buttons)
+    └─> .item-card (wishlist cards with green left border)
+```
+
 This architecture provides:
+
 - ✅ Clear separation of concerns
-- ✅ Role-based access control
-- ✅ Real-time updates
-- ✅ Scalable deployment options
+- ✅ Role-based access control with row-level security
+- ✅ Real-time updates via PocketBase subscriptions
+- ✅ Scalable deployment options (Docker or separate hosting)
 - ✅ Self-hosted data privacy
+- ✅ Consistent theming via CSS variables
+- ✅ Modern, responsive UI with Material Design icons
+- ✅ Drag-and-drop wishlist management
+- ✅ Custom family member routes for easy access

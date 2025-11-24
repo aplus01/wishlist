@@ -29,7 +29,8 @@ A full-featured web application for managing family Christmas wishlists with par
 - **Frontend**: React 18 with Vite
 - **Backend**: PocketBase (self-hosted)
 - **Routing**: React Router v6
-- **Styling**: Vanilla CSS with modern design
+- **Styling**: Vanilla CSS with CSS variables for easy theming
+- **Design**: Modern, responsive interface with custom Material Design icons
 
 ## Prerequisites
 
@@ -189,21 +190,27 @@ The app will be available at `http://localhost:3000`
 
    - Click "+ Add Item to Wishlist"
    - Fill in item details (title, price required; description, URL, image optional)
+   - Upload or link to product images
    - Submit to add to your wishlist
 
-3. **Track Status**
-   - Pending: Waiting for parent approval
-   - Approved: Visible to family members
-   - Rejected: Not approved (with reason from parent)
+3. **Manage Your Wishlist**
+   - View in card or table layout
+   - Drag and drop to reorder items (shows priority to parents)
+   - Send important items to top with priority button
+   - Edit or delete pending items
+   - Track status badges: Pending (yellow), Approved (green), Rejected (red)
 
 ### For Parents
 
 1. **Review Items**
 
    - Navigate to "Review Items"
-   - Filter by Pending/Approved/Rejected
+   - Filter by child, reservation status, and purchase status
+   - Use custom dropdown filters with Material Design icons
    - Approve items to make them visible to family
    - Reject items with a reason (visible to child)
+   - Delete items if needed
+   - See item priority (children's order)
 
 2. **Monitor Equity**
 
@@ -211,30 +218,45 @@ The app will be available at `http://localhost:3000`
    - View reserved gift values per child
    - See progress toward target budgets
    - Check which family members have contributed
+   - Track purchased vs. reserved items
+   - View fairness metrics across children
 
-3. **Manage Family Members**
-   - Navigate to "Family Members"
-   - View all registered family members
-   - Remove access if needed
+3. **Manage Children**
+
+   - Add children with name, optional age, PIN, and target budget
+   - Edit child information
+   - View and share child login credentials
+   - Remove children (cascades to delete their items)
+
+4. **Manage Family Members**
+   - View all registered family members with login routes
+   - Add custom family login paths (e.g., /grandma, /uncle-joe)
+   - Remove family access if needed
 
 ### For Family Members
 
-1. **Sign Up**
+1. **Access Your Personalized Login**
 
-   - Go to http://localhost:3000/signup
-   - Create an account with name, email, and password
-   - Login automatically after signup
+   - Parents create a custom route for you (e.g., /grandma, /aunt-susan)
+   - Go to your personalized URL
+   - Login with your credentials
+   - No complex invitation codes needed
 
 2. **Browse Wishlists**
 
    - View all approved items organized by child
-   - Filter: All Items / Available / My Reservations
+   - Filter by specific child using dropdown
+   - Filter: All Items / Available / My Reservations / Purchased
+   - See product images and links
+   - View item prices and descriptions
 
 3. **Reserve Gifts**
    - Click "Reserve This Gift" on available items
    - Item becomes unavailable to other family members
    - Click "Mark Purchased" after buying
-   - Can unreserve if plans change
+   - Unreserve if plans change
+   - Track your total reserved value
+   - See reservation history
 
 ## Project Structure
 
@@ -411,16 +433,35 @@ VITE_POCKETBASE_URL=https://your-pocketbase-domain.com
 
 ### Styling
 
-- Edit `src/index.css` for global styles
-- All colors use CSS variables for easy theming
-- Mobile-responsive design included
+The app uses a comprehensive CSS variable system for easy theming:
+
+**Color Variables:**
+
+- `--green-dark`, `--green-medium`, `--green-light` - Primary green palette
+- `--red-dark`, `--red-medium`, `--red-light` - Delete/reject actions
+- `--gold` - Primary action buttons
+- `--cream` - Accent backgrounds
+- `--edit-btn` - Edit button color
+
+**Design Features:**
+
+- Consistent card borders with `.card-bordered` class
+- Custom Material Design dropdown arrows
+- Stroked button styles with hover effects
+- Squared input borders for modern look
+- Mobile-responsive grid layouts
+
+Edit `src/index.css` to customize colors and spacing. All major UI elements use CSS variables for consistent theming.
 
 ### Features
 
 - Add email notifications in PocketBase hooks
-- Implement image upload instead of URLs
+- Implement direct image uploads (currently uses URLs)
 - Add categories/tags for items
 - Create shopping lists from reservations
+- Add gift notes or wrapping instructions
+- Implement price history tracking
+- Add wishlist templates for common items
 
 ## Troubleshooting
 

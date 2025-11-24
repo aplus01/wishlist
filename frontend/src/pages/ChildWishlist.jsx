@@ -355,13 +355,13 @@ export default function ChildWishlist() {
                         style={{
                           width: '100%',
                           height: '200px',
-                          background:
-                            'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+                          background: 'var(--placeholder-bg)',
                           borderRadius: '8px',
                           marginBottom: '12px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
+                          color: 'var(--placeholder-icon)',
                           fontSize: '64px',
                         }}
                       >

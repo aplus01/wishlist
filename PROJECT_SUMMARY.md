@@ -7,22 +7,26 @@ A complete, production-ready web application for managing family Christmas wishl
 ### ✅ All Requested Features Implemented
 
 1. **Kids Build Wishlists** ✓
+
    - Add items with title, description, price, URL, and images
    - Edit and delete pending items
    - See approval status
 
 2. **Parent Curation** ✓
+
    - Review all items from all children
    - Approve or reject with optional feedback
    - Control what family sees
 
 3. **Family Reservation System** ✓
+
    - View only approved items
    - Reserve items (prevents duplicates)
    - Mark items as purchased
    - Unreserve if needed
 
 4. **Equity Dashboard** ✓
+
    - See reserved gift value per child
    - Track progress toward target budgets
    - Monitor which family members contributed
@@ -66,11 +70,13 @@ christmas-wishlist.zip
 ## Technology Choices
 
 ### Frontend: React + Vite
+
 - Modern, fast development
 - Component-based architecture
 - Easy to customize
 
 ### Backend: PocketBase
+
 - Self-hosted (your data stays with you)
 - Built-in authentication
 - Real-time updates
@@ -78,6 +84,7 @@ christmas-wishlist.zip
 - Single binary - extremely easy to deploy
 
 ### Styling: Vanilla CSS
+
 - No framework overhead
 - Beautiful gradient design
 - Fully responsive
@@ -85,12 +92,16 @@ christmas-wishlist.zip
 
 ## Key Design Decisions
 
-1. **No Invitation Codes**: Simplified to direct signup for family members
+1. **Custom Family Routes**: Each family member gets a personalized login URL (e.g., /grandma)
 2. **PocketBase**: Self-hosted for complete control and privacy
 3. **PIN Authentication for Kids**: No email needed, parent-managed
 4. **Role-Based Access**: Three distinct user types with appropriate permissions
 5. **Real-Time Updates**: Changes appear immediately across devices
 6. **Mobile-First Design**: Works great on phones and tablets
+7. **CSS Variables**: Comprehensive theming system for easy customization
+8. **Material Design Icons**: Custom SVG icons for modern, clean interface
+9. **Drag-and-Drop**: Children can reorder wishlist items by priority
+10. **Stroked Buttons**: Modern outlined button style with hover effects
 
 ## Security Features
 
@@ -112,13 +123,25 @@ See QUICKSTART.md for detailed 5-minute setup guide.
 
 ## Customization Ideas
 
-- Change colors in `src/index.css`
+### Easy Theming
+
+- Change colors using CSS variables in `src/index.css`:
+  - `--green-dark`, `--green-medium`, `--green-light` for primary colors
+  - `--gold` for action buttons
+  - `--red-dark`, `--red-medium` for delete/reject actions
+  - `--edit-btn` for edit button color
+
+### Feature Extensions
+
 - Add email notifications
-- Implement image uploads (instead of URLs)
+- Implement direct image uploads (currently uses URLs)
 - Add categories/tags for items
 - Create printable shopping lists
 - Add gift wrapping notes
 - Multi-language support
+- Import from Amazon/other retailers
+- Budget alerts and warnings
+- Wishlist item history/analytics
 
 ## Deployment Ready
 
@@ -142,6 +165,7 @@ See README.md deployment section for details.
 ## Support
 
 All code is well-commented and documented. The README includes:
+
 - Detailed setup instructions
 - Usage guide for each role
 - API documentation
@@ -152,10 +176,14 @@ All code is well-commented and documented. The README includes:
 
 1. **Complete Solution**: Not just code - includes setup, docs, and deployment guides
 2. **Family-Focused**: Designed specifically for family gift coordination
-3. **Equity Dashboard**: Unique feature to ensure fairness
+3. **Equity Dashboard**: Unique feature to ensure fairness across children
 4. **Self-Hosted**: Your family's data stays private
 5. **Easy to Use**: Kid-friendly interface, simple for grandparents too
 6. **Production Ready**: Secure, tested, and deployable
+7. **Modern UI**: Custom Material Design icons, consistent styling, smooth interactions
+8. **Flexible Theming**: CSS variables make it easy to match your family's style
+9. **Personalized Routes**: Each family member gets their own memorable login URL
+10. **Drag-and-Drop**: Intuitive wishlist management with visual priority ordering
 
 ## Next Steps
 

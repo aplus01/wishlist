@@ -26,6 +26,8 @@
   --edit-btn: var(--text-light);
   --item-bg: #ffffff;
   --container-header-bg-color: var(--green-dark);
+  --placeholder-bg: #f3f4f6;
+  --placeholder-icon: #9ca3af;
 }
 
 body {

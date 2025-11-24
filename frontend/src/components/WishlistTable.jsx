@@ -182,12 +182,12 @@ export default function WishlistTable({
                     style={{
                       width: '60px',
                       height: '60px',
-                      background: '#f3f4f6',
+                      background: 'var(--placeholder-bg)',
                       borderRadius: '4px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#9ca3af',
+                      color: 'var(--placeholder-icon)',
                       fontSize: '24px',
                     }}
                   >
