@@ -18,7 +18,11 @@ export default function ReviewItems() {
   const [loading, setLoading] = useState(true);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectingItem, setRejectingItem] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingItem, setDeletingItem] = useState(null);
   const [showSantaModal, setShowSantaModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [santaFormData, setSantaFormData] = useState({
     title: '',
     description: '',
@@ -52,7 +56,19 @@ export default function ReviewItems() {
       loadData();
     } catch (err) {
       console.error('Error approving item:', err);
-      alert('Failed to approve item.');
+      setErrorMessage('Failed to approve item.');
+      setShowErrorModal(true);
+    }
+  };
+
+  const handleUnapprove = async (itemId) => {
+    try {
+      await items.unapprove(itemId);
+      loadData();
+    } catch (err) {
+      console.error('Error unapproving item:', err);
+      setErrorMessage('Failed to unapprove item.');
+      setShowErrorModal(true);
     }
   };
 
@@ -66,19 +82,28 @@ export default function ReviewItems() {
       loadData();
     } catch (err) {
       console.error('Error rejecting item:', err);
-      alert('Failed to reject item.');
+      setErrorMessage('Failed to reject item.');
+      setShowErrorModal(true);
     }
   };
 
-  const handleDelete = async (itemId) => {
-    if (window.confirm('Are you sure you want to delete this item?')) {
-      try {
-        await items.delete(itemId);
-        loadData();
-      } catch (err) {
-        console.error('Error deleting item:', err);
-        alert('Failed to delete item.');
-      }
+  const openDeleteModal = (item) => {
+    setDeletingItem(item);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deletingItem) return;
+
+    try {
+      await items.delete(deletingItem.id);
+      setShowDeleteModal(false);
+      setDeletingItem(null);
+      loadData();
+    } catch (err) {
+      console.error('Error deleting item:', err);
+      setErrorMessage('Failed to delete item.');
+      setShowErrorModal(true);
     }
   };
 
@@ -108,7 +133,8 @@ export default function ReviewItems() {
       loadData();
     } catch (err) {
       console.error('Error creating Santa gift:', err);
-      alert('Failed to create Santa gift. Please try again.');
+      setErrorMessage('Failed to create Santa gift. Please try again.');
+      setShowErrorModal(true);
     }
   };
 
@@ -139,7 +165,8 @@ export default function ReviewItems() {
       loadData();
     } catch (err) {
       console.error('Error marking Santa gift as purchased:', err);
-      alert('Failed to mark as purchased.');
+      setErrorMessage('Failed to mark as purchased.');
+      setShowErrorModal(true);
     }
   };
 
@@ -159,7 +186,8 @@ export default function ReviewItems() {
       }
     } catch (err) {
       console.error('Error unmarking Santa gift as purchased:', err);
-      alert('Failed to unmark as purchased.');
+      setErrorMessage('Failed to unmark as purchased.');
+      setShowErrorModal(true);
     }
   };
 
@@ -499,281 +527,386 @@ export default function ReviewItems() {
           </p>
         </div>
       ) : (
-        <div className='grid grid-2'>
-          {filteredItems.map((item) => (
-            <div key={item.id} className='item-card card-bordered'>
-              {item.image ? (
-                <img
-                  src={getImageUrl(item, item.image, '300x300')}
-                  alt={item.title}
+        <div
+          style={{
+            overflowX: 'auto',
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+            border: '1px solid #d4d4d4',
+          }}
+        >
+          <table
+            style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+              background: 'white',
+            }}
+          >
+            <thead>
+              <tr
+                style={{
+                  background: 'var(--green-medium)',
+                  color: 'white',
+                }}
+              >
+                <th
                   style={{
-                    width: '100%',
-                    height: '200px',
-                    objectFit: 'cover',
-                    borderRadius: '8px',
-                    marginBottom: '12px',
-                  }}
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                  }}
-                />
-              ) : (
-                <div
-                  style={{
-                    width: '100%',
-                    height: '200px',
-                    background: 'var(--placeholder-bg)',
-                    borderRadius: '8px',
-                    marginBottom: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'var(--placeholder-icon)',
-                    fontSize: '64px',
+                    padding: '12px 16px',
+                    textAlign: 'left',
+                    fontWeight: 600,
+                    width: '80px',
                   }}
                 >
-                  🎁
-                </div>
-              )}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  marginBottom: '8px',
-                  flexWrap: 'wrap',
-                }}
-              >
-                <h3 style={{ flex: 1 }}>
-                  {item.url ? (
-                    <a
-                      href={item.url}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      style={{
-                        color: '#1E7B46',
-                        textDecoration: 'underline',
-                      }}
-                    >
-                      {item.title}
-                    </a>
-                  ) : (
-                    item.title
-                  )}
-                </h3>
-                {item.from_santa && (
-                  <span
-                    style={{
-                      background: '#991b1b',
-                      color: '#ffffff',
-                      padding: '4px 12px',
-                      fontSize: '14px',
-                      fontWeight: 600,
-                    }}
-                  >
-                    🎅 From Santa
-                  </span>
-                )}
-                <span className={`badge badge-${item.status}`}>
-                  {item.status}
-                </span>
-              </div>
-
-              <div
-                style={{
-                  fontSize: '14px',
-                  color: '#1E7B46',
-                  fontWeight: 600,
-                  marginBottom: '8px',
-                }}
-              >
-                {getKidName(item.child)}
-              </div>
-
-              {item.description && <p>{item.description}</p>}
-
-              <div className='price'>${formatCurrency(item.price)}</div>
-
-              {(() => {
+                  Image
+                </th>
+                <th
+                  style={{
+                    padding: '12px 16px',
+                    textAlign: 'left',
+                    fontWeight: 600,
+                  }}
+                >
+                  Item
+                </th>
+                <th
+                  style={{
+                    padding: '12px 16px',
+                    textAlign: 'left',
+                    fontWeight: 600,
+                    width: '120px',
+                  }}
+                >
+                  Kid
+                </th>
+                <th
+                  style={{
+                    padding: '12px 16px',
+                    textAlign: 'left',
+                    fontWeight: 600,
+                    width: '100px',
+                  }}
+                >
+                  Price
+                </th>
+                <th
+                  style={{
+                    padding: '12px 16px',
+                    textAlign: 'left',
+                    fontWeight: 600,
+                    width: '100px',
+                  }}
+                >
+                  Status
+                </th>
+                <th
+                  style={{
+                    padding: '12px 16px',
+                    textAlign: 'center',
+                    fontWeight: 600,
+                    width: '200px',
+                  }}
+                >
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredItems.map((item) => {
                 const reservations = item.expand?.reservations_via_item
                   ? Array.isArray(item.expand.reservations_via_item)
                     ? item.expand.reservations_via_item
                     : [item.expand.reservations_via_item]
                   : [];
-                return (
-                  reservations.length > 0 && (
-                    <div
-                      style={{
-                        background: '#dbeafe',
-                        padding: '8px 12px',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        color: '#1e40af',
-                        marginBottom: '12px',
-                      }}
-                    >
-                      <strong>Reserved by:</strong>{' '}
-                      {reservations[0].expand?.reserved_by?.name ||
-                        'Family member'}
-                    </div>
-                  )
-                );
-              })()}
+                const hasReservation = reservations.length > 0;
+                const isPurchased = reservations.some((res) => res.purchased);
 
-              <div className='item-actions'>
-                {item.status === 'pending' && (
-                  <>
-                    <button
-                      onClick={() => handleApprove(item.id)}
-                      className='btn btn-success'
-                      style={{
-                        width: '40px',
-                        padding: '6px',
-                      }}
-                      title='Approve'
-                    >
-                      <svg
-                        xmlns='http://www.w3.org/2000/svg'
-                        height='18px'
-                        viewBox='0 -960 960 960'
-                        width='18px'
-                        fill='currentColor'
-                      >
-                        <path d='M720-120H280v-520l280-280 50 50q7 7 11.5 19t4.5 23v14l-44 174h258q32 0 56 24t24 56v80q0 7-2 15t-4 15L794-168q-9 20-30 34t-44 14Zm-360-80h360l120-280v-80H480l54-220-174 174v406Zm0-406v406-406Zm-80-34v80H160v360h120v80H80v-520h200Z' />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => openRejectModal(item)}
-                      className='btn btn-danger'
-                      style={{
-                        width: '40px',
-                        padding: '6px',
-                      }}
-                      title='Reject'
-                    >
-                      <svg
-                        xmlns='http://www.w3.org/2000/svg'
-                        height='18px'
-                        viewBox='0 -960 960 960'
-                        width='18px'
-                        fill='currentColor'
-                      >
-                        <path d='M240-840h440v520L400-40l-50-50q-7-7-11.5-19t-4.5-23v-14l44-174H120q-32 0-56-24t-24-56v-80q0-7 2-15t4-15l120-282q9-20 30-34t44-14Zm360 80H240L120-480v80h360l-54 220 174-174v-406Zm0 406v-406 406Zm80 34v-80h120v-360H680v-80h200v520H680Z' />
-                      </svg>
-                    </button>
-                  </>
-                )}
-                {item.status === 'rejected' && (
-                  <button
-                    onClick={() => handleApprove(item.id)}
-                    className='btn btn-success'
+                return (
+                  <tr
+                    key={item.id}
                     style={{
-                      width: '40px',
-                      padding: '6px',
+                      borderBottom: '1px solid #e5e7eb',
+                      background: 'white',
                     }}
-                    title='Approve'
                   >
-                    <svg
-                      xmlns='http://www.w3.org/2000/svg'
-                      height='18px'
-                      viewBox='0 -960 960 960'
-                      width='18px'
-                      fill='currentColor'
-                    >
-                      <path d='M720-120H280v-520l280-280 50 50q7 7 11.5 19t4.5 23v14l-44 174h258q32 0 56 24t24 56v80q0 7-2 15t-4 15L794-168q-9 20-30 34t-44 14Zm-360-80h360l120-280v-80H480l54-220-174 174v406Zm0-406v406-406Zm-80-34v80H160v360h120v80H80v-520h200Z' />
-                    </svg>
-                  </button>
-                )}
-                {(() => {
-                  const reservations = item.expand?.reservations_via_item
-                    ? Array.isArray(item.expand.reservations_via_item)
-                      ? item.expand.reservations_via_item
-                      : [item.expand.reservations_via_item]
-                    : [];
-                  return (
-                    item.status === 'approved' &&
-                    reservations.length === 0 &&
-                    !item.from_santa && (
-                      <button
-                        onClick={() => openRejectModal(item)}
-                        className='btn btn-danger'
-                      >
-                        Unapprove
-                      </button>
-                    )
-                  );
-                })()}
-                {(() => {
-                  const reservations = item.expand?.reservations_via_item
-                    ? Array.isArray(item.expand.reservations_via_item)
-                      ? item.expand.reservations_via_item
-                      : [item.expand.reservations_via_item]
-                    : [];
-                  return (
-                    item.from_santa &&
-                    item.status === 'approved' && (
-                      <>
-                        {reservations[0]?.purchased ? (
-                          <>
-                            <div
+                    <td style={{ padding: '12px 16px' }}>
+                      {item.image ? (
+                        <img
+                          src={getImageUrl(item, item.image, '100x100')}
+                          alt={item.title}
+                          style={{
+                            width: '60px',
+                            height: '60px',
+                            objectFit: 'cover',
+                            borderRadius: '4px',
+                            border: '1px solid #e5e7eb',
+                          }}
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: '60px',
+                            height: '60px',
+                            background: 'var(--placeholder-bg)',
+                            borderRadius: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'var(--placeholder-icon)',
+                            fontSize: '24px',
+                          }}
+                        >
+                          🎁
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <div>
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            marginBottom: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            flexWrap: 'wrap',
+                          }}
+                        >
+                          {item.url ? (
+                            <a
+                              href={item.url}
+                              target='_blank'
+                              rel='noopener noreferrer'
                               style={{
-                                background: '#d1fae5',
-                                padding: '8px',
-                                textAlign: 'center',
-                                color: '#065f46',
-                                fontWeight: 600,
-                                marginBottom: '8px',
-                                flex: '1 0 100%',
+                                color: '#1E7B46',
+                                textDecoration: 'underline',
                               }}
                             >
-                              ✓ Purchased
-                            </div>
-                            <button
-                              onClick={() =>
-                                handleUnmarkSantaGiftPurchased(item)
-                              }
-                              className='btn btn-secondary'
+                              {item.title}
+                            </a>
+                          ) : (
+                            item.title
+                          )}
+                          {item.from_santa && (
+                            <span
+                              style={{
+                                background: '#991b1b',
+                                color: '#ffffff',
+                                padding: '2px 8px',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                whiteSpace: 'nowrap',
+                              }}
                             >
-                              Mark as Not Purchased
+                              🎅 From Santa
+                            </span>
+                          )}
+                        </div>
+                        {item.description && (
+                          <div
+                            style={{
+                              fontSize: '14px',
+                              color: '#6b7280',
+                              marginBottom: '4px',
+                            }}
+                          >
+                            {item.description}
+                          </div>
+                        )}
+                        {hasReservation && (
+                          <div
+                            style={{
+                              background: '#dbeafe',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              color: '#1e40af',
+                              marginTop: '4px',
+                              display: 'inline-block',
+                            }}
+                          >
+                            <strong>Reserved by:</strong>{' '}
+                            {reservations[0].expand?.reserved_by?.name ||
+                              'Family member'}
+                            {isPurchased && ' • ✓ Purchased'}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td
+                      style={{
+                        padding: '12px 16px',
+                        fontWeight: 600,
+                        color: '#1E7B46',
+                      }}
+                    >
+                      {getKidName(item.child)}
+                    </td>
+                    <td
+                      style={{
+                        padding: '12px 16px',
+                        fontWeight: 600,
+                        color: '#1E7B46',
+                      }}
+                    >
+                      ${formatCurrency(item.price)}
+                    </td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <span className={`badge badge-${item.status}`}>
+                        {item.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: '8px',
+                          justifyContent: 'flex-end',
+                          flexWrap: 'wrap',
+                        }}
+                      >
+                        {item.status === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => handleApprove(item.id)}
+                              className='btn btn-success'
+                              style={{
+                                padding: '6px 12px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                              title='Approve'
+                            >
+                              <svg
+                                xmlns='http://www.w3.org/2000/svg'
+                                height='18px'
+                                viewBox='0 -960 960 960'
+                                width='18px'
+                                fill='currentColor'
+                              >
+                                <path d='M720-120H280v-520l280-280 50 50q7 7 11.5 19t4.5 23v14l-44 174h258q32 0 56 24t24 56v80q0 7-2 15t-4 15L794-168q-9 20-30 34t-44 14Zm-360-80h360l120-280v-80H480l54-220-174 174v406Zm0-406v406-406Zm-80-34v80H160v360h120v80H80v-520h200Z' />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => openRejectModal(item)}
+                              className='btn btn-danger'
+                              style={{
+                                padding: '6px 12px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                              title='Reject'
+                            >
+                              <svg
+                                xmlns='http://www.w3.org/2000/svg'
+                                height='18px'
+                                viewBox='0 -960 960 960'
+                                width='18px'
+                                fill='currentColor'
+                              >
+                                <path d='M240-840h440v520L400-40l-50-50q-7-7-11.5-19t-4.5-23v-14l44-174H120q-32 0-56-24t-24-56v-80q0-7 2-15t4-15l120-282q9-20 30-34t44-14Zm360 80H240L120-480v80h360l-54 220 174-174v-406Zm0 406v-406 406Zm80 34v-80h120v-360H680v-80h200v520H680Z' />
+                              </svg>
                             </button>
                           </>
-                        ) : (
+                        )}
+                        {item.status === 'rejected' && (
                           <button
-                            onClick={() => handleMarkSantaGiftPurchased(item)}
-                            className='btn btn-success'
+                            onClick={() => handleUnapprove(item.id)}
+                            className='btn btn-secondary'
+                            style={{
+                              padding: '6px 12px',
+                            }}
+                            title='Return to Pending'
                           >
-                            Mark as Purchased
+                            Unreject
                           </button>
                         )}
-                      </>
-                    )
-                  );
-                })()}
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  className='btn'
-                  style={{
-                    width: '40px',
-                    padding: '6px',
-                    background: 'var(--red-light)',
-                    color: 'var(--red-dark)',
-                    border: '1px solid var(--red-dark)',
-                  }}
-                  title='Delete'
-                >
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    height='18px'
-                    viewBox='0 -960 960 960'
-                    width='18px'
-                    fill='var(--red-dark)'
-                  >
-                    <path d='M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z' />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          ))}
+                        {item.status === 'approved' &&
+                          !hasReservation &&
+                          !item.from_santa && (
+                            <button
+                              onClick={() => handleUnapprove(item.id)}
+                              className='btn btn-secondary'
+                              style={{
+                                padding: '6px 12px',
+                              }}
+                            >
+                              Unapprove
+                            </button>
+                          )}
+                        {item.from_santa && item.status === 'approved' && (
+                          <>
+                            {isPurchased ? (
+                              <button
+                                onClick={() =>
+                                  handleUnmarkSantaGiftPurchased(item)
+                                }
+                                className='btn btn-secondary'
+                                style={{
+                                  padding: '6px 12px',
+                                  fontSize: '12px',
+                                }}
+                              >
+                                Unmark Purchase
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() =>
+                                  handleMarkSantaGiftPurchased(item)
+                                }
+                                className='btn btn-success'
+                                style={{
+                                  padding: '6px 12px',
+                                  fontSize: '12px',
+                                }}
+                              >
+                                Mark Purchased
+                              </button>
+                            )}
+                          </>
+                        )}
+                        <button
+                          onClick={() => openDeleteModal(item)}
+                          className='btn'
+                          style={{
+                            padding: '6px 12px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: 'transparent',
+                            color: '#C41E3A',
+                            border: '1px solid #C41E3A',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#C41E3A';
+                            e.currentTarget.style.color = '#ffffff';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent';
+                            e.currentTarget.style.color = '#C41E3A';
+                          }}
+                          title='Delete'
+                        >
+                          <svg
+                            xmlns='http://www.w3.org/2000/svg'
+                            height='18px'
+                            viewBox='0 -960 960 960'
+                            width='18px'
+                            fill='currentColor'
+                          >
+                            <path d='M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z' />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -797,6 +930,33 @@ export default function ReviewItems() {
               </button>
               <button onClick={handleReject} className='btn btn-danger'>
                 Reject Item
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div
+          className='modal-overlay'
+          onClick={() => setShowDeleteModal(false)}
+        >
+          <div className='modal' onClick={(e) => e.stopPropagation()}>
+            <h2>Delete Item</h2>
+            <p style={{ marginBottom: '20px' }}>
+              Are you sure you want to permanently delete "{deletingItem?.title}
+              "?
+            </p>
+
+            <div className='modal-actions'>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className='btn btn-secondary'
+              >
+                Cancel
+              </button>
+              <button onClick={handleDelete} className='btn btn-danger'>
+                Delete Item
               </button>
             </div>
           </div>
@@ -907,6 +1067,24 @@ export default function ReviewItems() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showErrorModal && (
+        <div className='modal-overlay' onClick={() => setShowErrorModal(false)}>
+          <div className='modal' onClick={(e) => e.stopPropagation()}>
+            <h2>Error</h2>
+            <p style={{ marginBottom: '20px' }}>{errorMessage}</p>
+
+            <div className='modal-actions'>
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className='btn btn-primary'
+              >
+                OK
+              </button>
+            </div>
           </div>
         </div>
       )}

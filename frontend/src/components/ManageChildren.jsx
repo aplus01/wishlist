@@ -13,6 +13,8 @@ export default function ManageChildren() {
     route: '',
     target_budget: '',
   });
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     loadChildren();
@@ -38,7 +40,8 @@ export default function ManageChildren() {
     // Validate route format
     const routePattern = /^[a-z0-9-]+$/;
     if (!routePattern.test(formData.route)) {
-      alert('Route must contain only lowercase letters, numbers, and hyphens');
+      setErrorMessage('Route must contain only lowercase letters, numbers, and hyphens');
+      setShowErrorModal(true);
       return;
     }
 
@@ -70,7 +73,8 @@ export default function ManageChildren() {
       loadChildren();
     } catch (err) {
       console.error('Error saving child:', err);
-      alert('Failed to save child. Please try again.');
+      setErrorMessage('Failed to save child. Please try again.');
+      setShowErrorModal(true);
     }
   };
 
@@ -96,7 +100,8 @@ export default function ManageChildren() {
         loadChildren();
       } catch (err) {
         console.error('Error deleting child:', err);
-        alert('Failed to delete kid.');
+        setErrorMessage('Failed to delete kid.');
+        setShowErrorModal(true);
       }
     }
   };
@@ -335,6 +340,24 @@ export default function ManageChildren() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showErrorModal && (
+        <div className='modal-overlay' onClick={() => setShowErrorModal(false)}>
+          <div className='modal' onClick={(e) => e.stopPropagation()}>
+            <h2>Error</h2>
+            <p style={{ marginBottom: '20px' }}>{errorMessage}</p>
+
+            <div className='modal-actions'>
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className='btn btn-primary'
+              >
+                OK
+              </button>
+            </div>
           </div>
         </div>
       )}

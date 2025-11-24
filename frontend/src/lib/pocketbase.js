@@ -247,6 +247,12 @@ export const items = {
     });
   },
 
+  unapprove: async (id) => {
+    return pb.collection('items').update(id, {
+      status: 'pending',
+    });
+  },
+
   reject: async (id) => {
     return pb.collection('items').update(id, {
       status: 'rejected',

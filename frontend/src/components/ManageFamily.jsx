@@ -9,6 +9,8 @@ export default function ManageFamily() {
     name: '',
     route: '',
   });
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     loadFamilyMembers();
@@ -34,7 +36,10 @@ export default function ManageFamily() {
     // Validate route format
     const routePattern = /^[a-z0-9-]+$/;
     if (!routePattern.test(formData.route)) {
-      alert('Route must contain only lowercase letters, numbers, and hyphens');
+      setErrorMessage(
+        'Route must contain only lowercase letters, numbers, and hyphens'
+      );
+      setShowErrorModal(true);
       return;
     }
 
@@ -53,9 +58,10 @@ export default function ManageFamily() {
       loadFamilyMembers();
     } catch (err) {
       console.error('Error creating family member:', err);
-      alert(
-        'Failed to create family member. The route might already be in use.'
+      setErrorMessage(
+        'Failed to create family member. The route may already be in use.'
       );
+      setShowErrorModal(true);
     }
   };
 
@@ -69,8 +75,9 @@ export default function ManageFamily() {
         await pb.collection('users').delete(memberId);
         loadFamilyMembers();
       } catch (err) {
-        console.error('Error removing family member:', err);
-        alert('Failed to remove family member.');
+        console.error('Error deleting family member:', err);
+        setErrorMessage('Failed to remove family member.');
+        setShowErrorModal(true);
       }
     }
   };
@@ -259,6 +266,24 @@ export default function ManageFamily() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showErrorModal && (
+        <div className='modal-overlay' onClick={() => setShowErrorModal(false)}>
+          <div className='modal' onClick={(e) => e.stopPropagation()}>
+            <h2>Error</h2>
+            <p style={{ marginBottom: '20px' }}>{errorMessage}</p>
+
+            <div className='modal-actions'>
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className='btn btn-primary'
+              >
+                OK
+              </button>
+            </div>
           </div>
         </div>
       )}

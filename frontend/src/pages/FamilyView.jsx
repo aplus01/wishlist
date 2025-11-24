@@ -14,6 +14,8 @@ export default function FamilyView() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, available, reserved
   const [kidFilter, setKidFilter] = useState('all'); // all or specific kid name
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Get current family user from either PocketBase auth or sessionStorage
   const getCurrentUser = () => {
@@ -104,9 +106,10 @@ export default function FamilyView() {
       await loadData();
     } catch (err) {
       console.error('Error reserving item:', err);
-      const errorMessage =
+      const errMsg =
         err.message || 'Failed to reserve item. It may already be reserved.';
-      alert(errorMessage);
+      setErrorMessage(errMsg);
+      setShowErrorModal(true);
     }
   };
 
@@ -117,7 +120,8 @@ export default function FamilyView() {
         loadData();
       } catch (err) {
         console.error('Error unreserving item:', err);
-        alert('Failed to unreserve item.');
+        setErrorMessage('Failed to unreserve item.');
+        setShowErrorModal(true);
       }
     }
   };
@@ -128,7 +132,8 @@ export default function FamilyView() {
       loadData();
     } catch (err) {
       console.error('Error marking as purchased:', err);
-      alert('Failed to mark as purchased.');
+      setErrorMessage('Failed to mark as purchased.');
+      setShowErrorModal(true);
     }
   };
 
@@ -138,7 +143,8 @@ export default function FamilyView() {
       loadData();
     } catch (err) {
       console.error('Error marking as not purchased:', err);
-      alert('Failed to mark as not purchased.');
+      setErrorMessage('Failed to mark as not purchased.');
+      setShowErrorModal(true);
     }
   };
 
@@ -491,6 +497,24 @@ export default function FamilyView() {
           ))
         )}
       </div>
+
+      {showErrorModal && (
+        <div className='modal-overlay' onClick={() => setShowErrorModal(false)}>
+          <div className='modal' onClick={(e) => e.stopPropagation()}>
+            <h2>Error</h2>
+            <p style={{ marginBottom: '20px' }}>{errorMessage}</p>
+
+            <div className='modal-actions'>
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className='btn btn-primary'
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

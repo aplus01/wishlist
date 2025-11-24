@@ -1,0 +1,8 @@
+help me plan a solution for supporting parental wishlists.
+
+key differences in a parent wishlist:
+they should be able to create a list of items in the same way that kids can.
+those items should not need approval
+they should not see what has been reserved. 
+other parents should see those items and be able to reserve them
+items from a parent wishlist should show up on family member views

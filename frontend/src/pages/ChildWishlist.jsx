@@ -18,6 +18,8 @@ export default function ChildWishlist() {
     image_url: '',
   });
   const [scrapingImage, setScrapingImage] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     loadData();
@@ -51,8 +53,15 @@ export default function ChildWishlist() {
     e.preventDefault();
 
     try {
+      // Normalize URL if it starts with "www."
+      let normalizedUrl = formData.url;
+      if (normalizedUrl && normalizedUrl.startsWith('www.')) {
+        normalizedUrl = 'https://' + normalizedUrl;
+      }
+
       const itemData = {
         ...formData,
+        url: normalizedUrl,
         child: childData.id,
         price: parseFloat(formData.price),
       };
@@ -79,7 +88,8 @@ export default function ChildWishlist() {
       loadData();
     } catch (err) {
       console.error('Error saving item:', err);
-      alert('Failed to save item. Please try again.');
+      setErrorMessage('Failed to save item. Please try again.');
+      setShowErrorModal(true);
     }
   };
 
@@ -102,14 +112,16 @@ export default function ChildWishlist() {
         loadData();
       } catch (err) {
         console.error('Error deleting item:', err);
-        alert('Failed to delete item. Please try again.');
+        setErrorMessage('Failed to delete item. Please try again.');
+        setShowErrorModal(true);
       }
     }
   };
 
   const handleScrapeImage = async () => {
     if (!formData.url) {
-      alert('Please enter a product URL first.');
+      setErrorMessage('Please enter a product URL first.');
+      setShowErrorModal(true);
       return;
     }
 
@@ -119,13 +131,15 @@ export default function ChildWishlist() {
       if (imageUrl) {
         setFormData({ ...formData, image_url: imageUrl });
       } else {
-        alert(
+        setErrorMessage(
           'Could not find an image on that page. You can enter an image URL manually.'
         );
+        setShowErrorModal(true);
       }
     } catch (err) {
       console.error('Error scraping image:', err);
-      alert('Failed to scrape image. You can enter an image URL manually.');
+      setErrorMessage('Failed to scrape image. You can enter an image URL manually.');
+      setShowErrorModal(true);
     } finally {
       setScrapingImage(false);
     }
@@ -155,7 +169,8 @@ export default function ChildWishlist() {
       await items.bulkUpdatePriorities(updates);
     } catch (err) {
       console.error('Error reordering items:', err);
-      alert('Failed to reorder items. Please try again.');
+      setErrorMessage('Failed to reorder items. Please try again.');
+      setShowErrorModal(true);
       // Reload on error to revert optimistic update
       loadData();
     }
@@ -198,7 +213,8 @@ export default function ChildWishlist() {
       await items.bulkUpdatePriorities(updates);
     } catch (err) {
       console.error('Error sending item to top:', err);
-      alert('Failed to move item to top. Please try again.');
+      setErrorMessage('Failed to move item to top. Please try again.');
+      setShowErrorModal(true);
       loadData();
     }
   };
@@ -581,9 +597,14 @@ export default function ChildWishlist() {
                 <input
                   type='url'
                   value={formData.url}
-                  onChange={(e) =>
-                    setFormData({ ...formData, url: e.target.value })
-                  }
+                  onChange={(e) => {
+                    let value = e.target.value;
+                    // Auto-prepend https:// if user starts with www.
+                    if (value.startsWith('www.') && !value.includes('://')) {
+                      value = 'https://' + value;
+                    }
+                    setFormData({ ...formData, url: value });
+                  }}
                   placeholder='https://...'
                 />
               </div>
@@ -680,6 +701,24 @@ export default function ChildWishlist() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showErrorModal && (
+        <div className='modal-overlay' onClick={() => setShowErrorModal(false)}>
+          <div className='modal' onClick={(e) => e.stopPropagation()}>
+            <h2>Error</h2>
+            <p style={{ marginBottom: '20px' }}>{errorMessage}</p>
+
+            <div className='modal-actions'>
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className='btn btn-primary'
+              >
+                OK
+              </button>
+            </div>
           </div>
         </div>
       )}
