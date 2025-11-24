@@ -15,6 +15,8 @@ export default function ManageChildren() {
   });
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingChild, setDeletingChild] = useState(null);
 
   useEffect(() => {
     loadChildren();
@@ -40,7 +42,9 @@ export default function ManageChildren() {
     // Validate route format
     const routePattern = /^[a-z0-9-]+$/;
     if (!routePattern.test(formData.route)) {
-      setErrorMessage('Route must contain only lowercase letters, numbers, and hyphens');
+      setErrorMessage(
+        'Route must contain only lowercase letters, numbers, and hyphens'
+      );
       setShowErrorModal(true);
       return;
     }
@@ -89,20 +93,23 @@ export default function ManageChildren() {
     setShowModal(true);
   };
 
-  const handleDelete = async (childId) => {
-    if (
-      window.confirm(
-        'Are you sure? This will delete the kid and all their wishlist items.'
-      )
-    ) {
-      try {
-        await children.delete(childId);
-        loadChildren();
-      } catch (err) {
-        console.error('Error deleting child:', err);
-        setErrorMessage('Failed to delete kid.');
-        setShowErrorModal(true);
-      }
+  const openDeleteModal = (child) => {
+    setDeletingChild(child);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deletingChild) return;
+
+    try {
+      await children.delete(deletingChild.id);
+      setShowDeleteModal(false);
+      setDeletingChild(null);
+      loadChildren();
+    } catch (err) {
+      console.error('Error deleting child:', err);
+      setErrorMessage('Failed to delete kid.');
+      setShowErrorModal(true);
     }
   };
 
@@ -150,10 +157,7 @@ export default function ManageChildren() {
       ) : (
         <div className='grid grid-2'>
           {childrenList.map((child) => (
-            <div
-              key={child.id}
-              className='card card-bordered'
-            >
+            <div key={child.id} className='card card-bordered'>
               <div
                 style={{
                   display: 'flex',
@@ -223,7 +227,7 @@ export default function ManageChildren() {
                   Edit
                 </button>
                 <button
-                  onClick={() => handleDelete(child.id)}
+                  onClick={() => openDeleteModal(child)}
                   className='btn btn-danger'
                 >
                   Delete
@@ -340,6 +344,33 @@ export default function ManageChildren() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div
+          className='modal-overlay'
+          onClick={() => setShowDeleteModal(false)}
+        >
+          <div className='modal' onClick={(e) => e.stopPropagation()}>
+            <h2>Delete Kid</h2>
+            <p style={{ marginBottom: '20px' }}>
+              Are you sure you want to delete {deletingChild?.name}? This will
+              also delete all their wishlist items!
+            </p>
+
+            <div className='modal-actions'>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className='btn btn-secondary'
+              >
+                Cancel
+              </button>
+              <button onClick={handleDelete} className='btn btn-danger'>
+                Delete Kid
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -20,6 +20,8 @@ export default function ChildWishlist() {
   const [scrapingImage, setScrapingImage] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingItemId, setDeletingItemId] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -105,16 +107,23 @@ export default function ChildWishlist() {
     setShowModal(true);
   };
 
-  const handleDelete = async (itemId) => {
-    if (window.confirm('Are you sure you want to delete this item?')) {
-      try {
-        await items.delete(itemId);
-        loadData();
-      } catch (err) {
-        console.error('Error deleting item:', err);
-        setErrorMessage('Failed to delete item. Please try again.');
-        setShowErrorModal(true);
-      }
+  const openDeleteModal = (itemId) => {
+    setDeletingItemId(itemId);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deletingItemId) return;
+
+    try {
+      await items.delete(deletingItemId);
+      setShowDeleteModal(false);
+      setDeletingItemId(null);
+      loadData();
+    } catch (err) {
+      console.error('Error deleting item:', err);
+      setErrorMessage('Failed to delete item. Please try again.');
+      setShowErrorModal(true);
     }
   };
 
@@ -138,7 +147,9 @@ export default function ChildWishlist() {
       }
     } catch (err) {
       console.error('Error scraping image:', err);
-      setErrorMessage('Failed to scrape image. You can enter an image URL manually.');
+      setErrorMessage(
+        'Failed to scrape image. You can enter an image URL manually.'
+      );
       setShowErrorModal(true);
     } finally {
       setScrapingImage(false);
@@ -491,7 +502,7 @@ export default function ChildWishlist() {
                         </svg>
                       </button>
                       <button
-                        onClick={() => handleDelete(item.id)}
+                        onClick={() => openDeleteModal(item.id)}
                         disabled={item.status === 'approved'}
                         className='btn'
                         style={{
@@ -701,6 +712,32 @@ export default function ChildWishlist() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div
+          className='modal-overlay'
+          onClick={() => setShowDeleteModal(false)}
+        >
+          <div className='modal' onClick={(e) => e.stopPropagation()}>
+            <h2>Delete Item</h2>
+            <p style={{ marginBottom: '20px' }}>
+              Are you sure you want to delete this item?
+            </p>
+
+            <div className='modal-actions'>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className='btn btn-secondary'
+              >
+                Cancel
+              </button>
+              <button onClick={handleDelete} className='btn btn-danger'>
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}

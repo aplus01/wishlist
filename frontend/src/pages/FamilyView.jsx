@@ -16,6 +16,8 @@ export default function FamilyView() {
   const [kidFilter, setKidFilter] = useState('all'); // all or specific kid name
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showUnreserveModal, setShowUnreserveModal] = useState(false);
+  const [unreservingId, setUnreservingId] = useState(null);
 
   // Get current family user from either PocketBase auth or sessionStorage
   const getCurrentUser = () => {
@@ -113,16 +115,26 @@ export default function FamilyView() {
     }
   };
 
-  const handleUnreserve = async (reservationId) => {
-    if (window.confirm('Are you sure you want to unreserve this item?')) {
-      try {
-        await reservationsAPI.delete(reservationId);
-        loadData();
-      } catch (err) {
-        console.error('Error unreserving item:', err);
-        setErrorMessage('Failed to unreserve item.');
-        setShowErrorModal(true);
-      }
+  const openUnreserveModal = (reservationId) => {
+    setUnreservingId(reservationId);
+    setShowUnreserveModal(true);
+  };
+
+  const handleUnreserve = async () => {
+    if (!unreservingId) return;
+
+    try {
+      await reservationsAPI.delete(unreservingId);
+      setShowUnreserveModal(false);
+      setUnreservingId(null);
+      setLoading(true);
+      await loadData();
+    } catch (err) {
+      console.error('Error unreserving item:', err);
+      setErrorMessage('Failed to unreserve item.');
+      setShowErrorModal(true);
+      setShowUnreserveModal(false);
+      setUnreservingId(null);
     }
   };
 
@@ -169,17 +181,28 @@ export default function FamilyView() {
     );
   };
 
-  const filteredItems = approvedItems.filter((item) => {
+  // Filter by kid first
+  const itemsFilteredByKid = approvedItems.filter((item) => {
+    const kidName = item.expand?.child?.name || 'Unknown';
+    return kidFilter === 'all' || kidName === kidFilter;
+  });
+
+  // Calculate counts based on kid filter
+  const allCount = itemsFilteredByKid.length;
+  const availableCount = itemsFilteredByKid.filter(
+    (item) => !isItemReserved(item)
+  ).length;
+  const myReservationsCount = itemsFilteredByKid.filter(
+    (item) => !!getMyReservation(item)
+  ).length;
+
+  const filteredItems = itemsFilteredByKid.filter((item) => {
     // Filter by reservation status
     let statusMatch = true;
     if (filter === 'available') statusMatch = !isItemReserved(item);
     if (filter === 'reserved') statusMatch = !!getMyReservation(item);
 
-    // Filter by kid
-    const kidName = item.expand?.child?.name || 'Unknown';
-    const kidMatch = kidFilter === 'all' || kidName === kidFilter;
-
-    return statusMatch && kidMatch;
+    return statusMatch;
   });
 
   // Group items by kid
@@ -210,7 +233,7 @@ export default function FamilyView() {
 
       <div className='container'>
         <div className='card' style={{ marginBottom: '30px' }}>
-          <h2 style={{ marginBottom: '16px', color: '#165B33' }}>
+          <h2 style={{ marginBottom: '16px', color: 'var(--green-dark)' }}>
             Welcome, {getCurrentUser()?.name}!
           </h2>
           <p style={{ marginBottom: '20px' }}>
@@ -224,7 +247,7 @@ export default function FamilyView() {
                 display: 'block',
                 marginBottom: '8px',
                 fontWeight: 600,
-                color: '#165B33',
+                color: 'var(--green-dark)',
               }}
             >
               Filter by Kid:
@@ -282,7 +305,7 @@ export default function FamilyView() {
                 filter === 'all' ? 'btn-primary' : 'btn-secondary'
               }`}
             >
-              All Items ({approvedItems.length})
+              All Items ({allCount})
             </button>
             <button
               onClick={() => setFilter('available')}
@@ -290,8 +313,7 @@ export default function FamilyView() {
                 filter === 'available' ? 'btn-primary' : 'btn-secondary'
               }`}
             >
-              Available (
-              {approvedItems.filter((item) => !isItemReserved(item)).length})
+              Available ({availableCount})
             </button>
             <button
               onClick={() => setFilter('reserved')}
@@ -299,7 +321,7 @@ export default function FamilyView() {
                 filter === 'reserved' ? 'btn-primary' : 'btn-secondary'
               }`}
             >
-              My Reservations ({myReservations.length})
+              My Reservations ({myReservationsCount})
             </button>
           </div>
         </div>
@@ -329,7 +351,7 @@ export default function FamilyView() {
                 style={{
                   margin: 0,
                   color: '#FFFFFF',
-                  background: '#165B33',
+                  background: 'var(--container-header-bg-color)',
                   padding: '16px 24px',
                   fontSize: '24px',
                   fontWeight: 700,
@@ -338,7 +360,7 @@ export default function FamilyView() {
                 {kidName}'s Wishlist
               </h2>
 
-              <div className='grid grid-3' style={{ padding: '24px' }}>
+              <div className='grid grid-2' style={{ padding: '24px' }}>
                 {kidItems.map((item) => {
                   const reserved = isItemReserved(item);
                   const myReservation = getMyReservation(item);
@@ -378,37 +400,30 @@ export default function FamilyView() {
                           🎁
                         </div>
                       )}
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px',
-                          marginBottom: '8px',
-                        }}
-                      >
-                        <h3 style={{ flex: 1 }}>
-                          {item.url ? (
-                            <a
-                              href={item.url}
-                              target='_blank'
-                              rel='noopener noreferrer'
-                              style={{
-                                color: '#1E7B46',
-                                textDecoration: 'underline',
-                              }}
-                            >
-                              {item.title}
-                            </a>
-                          ) : (
-                            item.title
-                          )}
-                        </h3>
-                        {reserved && (
+                      <h3 style={{ marginBottom: '8px' }}>
+                        {item.url ? (
+                          <a
+                            href={item.url}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            style={{
+                              color: '#1E7B46',
+                              textDecoration: 'underline',
+                            }}
+                          >
+                            {item.title}
+                          </a>
+                        ) : (
+                          item.title
+                        )}
+                      </h3>
+                      {reserved && (
+                        <div style={{ marginBottom: '8px' }}>
                           <span className='badge badge-reserved'>
                             {myReservation ? 'Reserved by You' : 'Reserved'}
                           </span>
-                        )}
-                      </div>
+                        </div>
+                      )}
 
                       {item.description && <p>{item.description}</p>}
 
@@ -439,7 +454,7 @@ export default function FamilyView() {
                                 </button>
                                 <button
                                   onClick={() =>
-                                    handleUnreserve(myReservation.id)
+                                    openUnreserveModal(myReservation.id)
                                   }
                                   className='btn btn-secondary'
                                 >
@@ -497,6 +512,32 @@ export default function FamilyView() {
           ))
         )}
       </div>
+
+      {showUnreserveModal && (
+        <div
+          className='modal-overlay'
+          onClick={() => setShowUnreserveModal(false)}
+        >
+          <div className='modal' onClick={(e) => e.stopPropagation()}>
+            <h2>Unreserve Item</h2>
+            <p style={{ marginBottom: '20px' }}>
+              Are you sure you want to unreserve this item?
+            </p>
+
+            <div className='modal-actions'>
+              <button
+                onClick={() => setShowUnreserveModal(false)}
+                className='btn btn-secondary'
+              >
+                Cancel
+              </button>
+              <button onClick={handleUnreserve} className='btn btn-danger'>
+                Unreserve
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showErrorModal && (
         <div className='modal-overlay' onClick={() => setShowErrorModal(false)}>

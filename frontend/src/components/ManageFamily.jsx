@@ -11,6 +11,8 @@ export default function ManageFamily() {
   });
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingMember, setDeletingMember] = useState(null);
 
   useEffect(() => {
     loadFamilyMembers();
@@ -65,20 +67,23 @@ export default function ManageFamily() {
     }
   };
 
-  const handleRemove = async (memberId) => {
-    if (
-      window.confirm(
-        'Are you sure you want to remove this family member? They will lose access to the wishlist.'
-      )
-    ) {
-      try {
-        await pb.collection('users').delete(memberId);
-        loadFamilyMembers();
-      } catch (err) {
-        console.error('Error deleting family member:', err);
-        setErrorMessage('Failed to remove family member.');
-        setShowErrorModal(true);
-      }
+  const openDeleteModal = (member) => {
+    setDeletingMember(member);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deletingMember) return;
+
+    try {
+      await pb.collection('users').delete(deletingMember.id);
+      setShowDeleteModal(false);
+      setDeletingMember(null);
+      loadFamilyMembers();
+    } catch (err) {
+      console.error('Error deleting family member:', err);
+      setErrorMessage('Failed to remove family member.');
+      setShowErrorModal(true);
     }
   };
 
@@ -184,7 +189,7 @@ export default function ManageFamily() {
                   </div>
 
                   <button
-                    onClick={() => handleRemove(member.id)}
+                    onClick={() => openDeleteModal(member)}
                     className='btn btn-danger'
                     style={{ width: '100%' }}
                   >
@@ -266,6 +271,33 @@ export default function ManageFamily() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div
+          className='modal-overlay'
+          onClick={() => setShowDeleteModal(false)}
+        >
+          <div className='modal' onClick={(e) => e.stopPropagation()}>
+            <h2>Remove Family Member</h2>
+            <p style={{ marginBottom: '20px' }}>
+              Are you sure you want to remove {deletingMember?.name}? This will
+              also remove their reservations!
+            </p>
+
+            <div className='modal-actions'>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className='btn btn-secondary'
+              >
+                Cancel
+              </button>
+              <button onClick={handleDelete} className='btn btn-danger'>
+                Remove Member
+              </button>
+            </div>
           </div>
         </div>
       )}
