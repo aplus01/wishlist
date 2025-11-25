@@ -23,6 +23,8 @@ export default function ReviewItems() {
   const [showSantaModal, setShowSantaModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showUnreserveModal, setShowUnreserveModal] = useState(false);
+  const [unreservingId, setUnreservingId] = useState(null);
   const [santaFormData, setSantaFormData] = useState({
     title: '',
     description: '',
@@ -87,25 +89,6 @@ export default function ReviewItems() {
     }
   };
 
-  const openDeleteModal = (item) => {
-    setDeletingItem(item);
-    setShowDeleteModal(true);
-  };
-
-  const handleDelete = async () => {
-    if (!deletingItem) return;
-
-    try {
-      await items.delete(deletingItem.id);
-      setShowDeleteModal(false);
-      setDeletingItem(null);
-      loadData();
-    } catch (err) {
-      console.error('Error deleting item:', err);
-      setErrorMessage('Failed to delete item.');
-      setShowErrorModal(true);
-    }
-  };
 
   const handleSantaSubmit = async (e) => {
     e.preventDefault();
@@ -143,6 +126,26 @@ export default function ReviewItems() {
     setShowRejectModal(true);
   };
 
+  const openDeleteModal = (item) => {
+    setDeletingItem(item);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deletingItem) return;
+
+    try {
+      await items.delete(deletingItem.id);
+      setShowDeleteModal(false);
+      setDeletingItem(null);
+      loadData();
+    } catch (err) {
+      console.error('Error deleting item:', err);
+      setErrorMessage('Failed to delete item.');
+      setShowErrorModal(true);
+    }
+  };
+
   const handleMarkSantaGiftPurchased = async (item) => {
     try {
       // Normalize reservations to always be an array
@@ -170,23 +173,61 @@ export default function ReviewItems() {
     }
   };
 
-  const handleUnmarkSantaGiftPurchased = async (item) => {
-    try {
-      // Normalize reservations to always be an array
-      const reservationsList = item.expand?.reservations_via_item
-        ? Array.isArray(item.expand.reservations_via_item)
-          ? item.expand.reservations_via_item
-          : [item.expand.reservations_via_item]
-        : [];
-      const existingReservation = reservationsList[0];
 
-      if (existingReservation) {
-        await reservations.update(existingReservation.id, { purchased: false });
-        loadData();
-      }
+  const handleReserve = async (itemId) => {
+    try {
+      const currentUser = authStore.user();
+      await reservations.create(itemId, currentUser?.id);
+      loadData();
     } catch (err) {
-      console.error('Error unmarking Santa gift as purchased:', err);
-      setErrorMessage('Failed to unmark as purchased.');
+      console.error('Error reserving item:', err);
+      const errMsg =
+        err.message || 'Failed to reserve item. It may already be reserved.';
+      setErrorMessage(errMsg);
+      setShowErrorModal(true);
+    }
+  };
+
+  const openUnreserveModal = (reservationId) => {
+    setUnreservingId(reservationId);
+    setShowUnreserveModal(true);
+  };
+
+  const handleUnreserve = async () => {
+    if (!unreservingId) return;
+
+    try {
+      await reservations.delete(unreservingId);
+      setShowUnreserveModal(false);
+      setUnreservingId(null);
+      loadData();
+    } catch (err) {
+      console.error('Error unreserving item:', err);
+      setErrorMessage('Failed to unreserve item.');
+      setShowErrorModal(true);
+      setShowUnreserveModal(false);
+      setUnreservingId(null);
+    }
+  };
+
+  const handleMarkPurchased = async (reservationId) => {
+    try {
+      await reservations.markPurchased(reservationId);
+      loadData();
+    } catch (err) {
+      console.error('Error marking as purchased:', err);
+      setErrorMessage('Failed to mark as purchased.');
+      setShowErrorModal(true);
+    }
+  };
+
+  const handleMarkNotPurchased = async (reservationId) => {
+    try {
+      await reservations.update(reservationId, { purchased: false });
+      loadData();
+    } catch (err) {
+      console.error('Error marking as not purchased:', err);
+      setErrorMessage('Failed to mark as not purchased.');
       setShowErrorModal(true);
     }
   };
@@ -617,13 +658,26 @@ export default function ReviewItems() {
             </thead>
             <tbody>
               {filteredItems.map((item) => {
-                const reservations = item.expand?.reservations_via_item
+                const itemReservations = item.expand?.reservations_via_item
                   ? Array.isArray(item.expand.reservations_via_item)
                     ? item.expand.reservations_via_item
                     : [item.expand.reservations_via_item]
                   : [];
-                const hasReservation = reservations.length > 0;
-                const isPurchased = reservations.some((res) => res.purchased);
+                const hasReservation = itemReservations.length > 0;
+                const isPurchased = itemReservations.some((res) => res.purchased);
+
+                // Check if this item is reserved by the current parent
+                const currentUser = authStore.user();
+                const myReservation = itemReservations.find(
+                  (res) => res.reserved_by === currentUser?.id
+                );
+
+                // Parents can reserve Santa gifts (even though they created them) to coordinate purchases
+                // Parents should not see reservation buttons on non-Santa items they created
+                const isMyOwnItem = item.parent === currentUser?.id && !item.from_santa;
+
+                // Only show reservation actions on approved items (not on parent's own non-Santa items)
+                const canReserve = item.status === 'approved' && !isMyOwnItem;
 
                 return (
                   <tr
@@ -733,7 +787,7 @@ export default function ReviewItems() {
                             }}
                           >
                             <strong>Reserved by:</strong>{' '}
-                            {reservations[0].expand?.reserved_by?.name ||
+                            {itemReservations[0].expand?.reserved_by?.name ||
                               'Family member'}
                             {isPurchased && ' • ✓ Purchased'}
                           </div>
@@ -818,6 +872,112 @@ export default function ReviewItems() {
                             </button>
                           </>
                         )}
+                        {/* Reservation action buttons for approved items (including Santa gifts) */}
+                        {canReserve && !hasReservation && (
+                          <button
+                            onClick={() => handleReserve(item.id)}
+                            className='btn btn-primary'
+                            style={{
+                              padding: '6px 12px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                            title='Reserve'
+                          >
+                            <svg
+                              xmlns='http://www.w3.org/2000/svg'
+                              height='18px'
+                              viewBox='0 0 24 24'
+                              width='18px'
+                              fill='currentColor'
+                            >
+                              <path d='M0 0h24v24H0z' fill='none'/>
+                              <path d='M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76l1-1.36 1 1.36L15.38 12 17 10.83 14.92 8H20v6z'/>
+                            </svg>
+                          </button>
+                        )}
+
+                        {/* Reservation buttons when item is reserved */}
+                        {canReserve && myReservation && !myReservation.purchased && (
+                          <>
+                            <button
+                              onClick={() => handleMarkPurchased(myReservation.id)}
+                              className='btn btn-success'
+                              style={{
+                                padding: '6px 12px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                              title='Mark as Purchased'
+                            >
+                              <svg
+                                xmlns='http://www.w3.org/2000/svg'
+                                height='18px'
+                                viewBox='0 0 24 24'
+                                width='18px'
+                                fill='currentColor'
+                              >
+                                <path d='M0 0h24v24H0z' fill='none'/>
+                                <path d='M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z'/>
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => openUnreserveModal(myReservation.id)}
+                              className='btn btn-secondary'
+                              style={{
+                                padding: '6px 12px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                              title='Unreserve'
+                            >
+                              <svg
+                                xmlns='http://www.w3.org/2000/svg'
+                                viewBox='0 0 24 24'
+                                width='18px'
+                                height='18px'
+                              >
+                                <defs>
+                                  <mask id='giftMask'>
+                                    <rect width='24' height='24' fill='white'/>
+                                    <line x1='4' y1='4' x2='20' y2='20' stroke='black' stroke-width='3.5' stroke-linecap='round'/>
+                                  </mask>
+                                </defs>
+                                <path mask='url(#giftMask)' fill='currentColor' d='M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76l1-1.36 1 1.36L15.38 12 17 10.83 14.92 8H20v6z'/>
+                                <line x1='4' y1='4' x2='20' y2='20' stroke='currentColor' stroke-width='2' stroke-linecap='round'/>
+                              </svg>
+                            </button>
+                          </>
+                        )}
+
+                        {canReserve && myReservation && myReservation.purchased && (
+                          <button
+                            onClick={() => handleMarkNotPurchased(myReservation.id)}
+                            className='btn btn-secondary'
+                            style={{
+                              padding: '6px 12px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                            title='Mark Not Purchased'
+                          >
+                            <svg
+                              xmlns='http://www.w3.org/2000/svg'
+                              height='18px'
+                              viewBox='0 0 24 24'
+                              width='18px'
+                              fill='currentColor'
+                            >
+                              <path d='M0 0h24v24H0z' fill='none'/>
+                              <path d='M12.5 6.9c1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-.53.12-1.03.3-1.48.54l1.47 1.47c.41-.17.91-.27 1.51-.27zM5.33 4.06L4.06 5.33 7.5 8.77c0 2.08 1.56 3.21 3.91 3.91l3.51 3.51c-.34.48-1.05.91-2.42.91-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c.96-.18 1.82-.55 2.45-1.12l2.22 2.22 1.27-1.27L5.33 4.06z'/>
+                            </svg>
+                          </button>
+                        )}
+
                         {item.status === 'rejected' && (
                           <button
                             onClick={() => handleUnapprove(item.id)}
@@ -830,82 +990,42 @@ export default function ReviewItems() {
                             Unreject
                           </button>
                         )}
-                        {item.status === 'approved' &&
-                          !hasReservation &&
-                          !item.from_santa && (
-                            <button
-                              onClick={() => handleUnapprove(item.id)}
-                              className='btn btn-secondary'
-                              style={{
-                                padding: '6px 12px',
-                              }}
-                            >
-                              Unapprove
-                            </button>
-                          )}
-                        {item.from_santa && item.status === 'approved' && (
-                          <>
-                            {isPurchased ? (
-                              <button
-                                onClick={() =>
-                                  handleUnmarkSantaGiftPurchased(item)
-                                }
-                                className='btn btn-secondary'
-                                style={{
-                                  padding: '6px 12px',
-                                  fontSize: '12px',
-                                }}
-                              >
-                                Unmark Purchase
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() =>
-                                  handleMarkSantaGiftPurchased(item)
-                                }
-                                className='btn btn-success'
-                                style={{
-                                  padding: '6px 12px',
-                                  fontSize: '12px',
-                                }}
-                              >
-                                Mark Purchased
-                              </button>
-                            )}
-                          </>
-                        )}
-                        <button
-                          onClick={() => openDeleteModal(item)}
-                          className='btn'
-                          style={{
-                            padding: '6px 12px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background: 'transparent',
-                            color: '#C41E3A',
-                            border: '1px solid #C41E3A',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = '#C41E3A';
-                            e.currentTarget.style.color = '#ffffff';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'transparent';
-                            e.currentTarget.style.color = '#C41E3A';
-                          }}
-                          title='Delete'
-                        >
-                          <svg
-                            xmlns='http://www.w3.org/2000/svg'
-                            height='18px'
-                            viewBox='0 -960 960 960'
-                            width='18px'
-                            fill='currentColor'
+
+                        {/* Delete button - for child items and Santa gifts - always rightmost */}
+                        {((item.from_santa && item.status === 'approved') || (!item.parent && item.child)) && (
+                          <button
+                            onClick={() => openDeleteModal(item)}
+                            className='btn'
+                            style={{
+                              padding: '6px 12px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              background: 'transparent',
+                              color: '#C41E3A',
+                              border: '1px solid #C41E3A',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = '#C41E3A';
+                              e.currentTarget.style.color = '#ffffff';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'transparent';
+                              e.currentTarget.style.color = '#C41E3A';
+                            }}
+                            title='Delete'
                           >
-                            <path d='M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z' />
-                          </svg>
-                        </button>
+                            <svg
+                              xmlns='http://www.w3.org/2000/svg'
+                              height='18px'
+                              viewBox='0 -960 960 960'
+                              width='18px'
+                              fill='currentColor'
+                            >
+                              <path d='M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z' />
+                            </svg>
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -1073,6 +1193,32 @@ export default function ReviewItems() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showUnreserveModal && (
+        <div
+          className='modal-overlay'
+          onClick={() => setShowUnreserveModal(false)}
+        >
+          <div className='modal' onClick={(e) => e.stopPropagation()}>
+            <h2>Unreserve Item</h2>
+            <p style={{ marginBottom: '20px' }}>
+              Are you sure you want to unreserve this item?
+            </p>
+
+            <div className='modal-actions'>
+              <button
+                onClick={() => setShowUnreserveModal(false)}
+                className='btn btn-secondary'
+              >
+                Cancel
+              </button>
+              <button onClick={handleUnreserve} className='btn btn-danger'>
+                Unreserve
+              </button>
+            </div>
           </div>
         </div>
       )}
