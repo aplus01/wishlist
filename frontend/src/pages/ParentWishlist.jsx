@@ -496,8 +496,43 @@ export default function ParentWishlist() {
 
       {/* Add/Edit Item Modal */}
       {showModal && (
-        <div className='modal-overlay' onClick={() => setShowModal(false)}>
-          <div className='modal' onClick={(e) => e.stopPropagation()}>
+        <div className='modal-overlay'>
+          <div className='modal' style={{ position: 'relative' }}>
+            <button
+              type='button'
+              onClick={() => setShowModal(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#6b7280',
+                transition: 'color 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#000000';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#6b7280';
+              }}
+              title='Close'
+            >
+              <svg
+                xmlns='http://www.w3.org/2000/svg'
+                height='24px'
+                viewBox='0 -960 960 960'
+                width='24px'
+                fill='currentColor'
+              >
+                <path d='m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z' />
+              </svg>
+            </button>
             <h2>{editingItem ? 'Edit Item' : 'Add New Item'}</h2>
 
             <form onSubmit={handleSubmit}>

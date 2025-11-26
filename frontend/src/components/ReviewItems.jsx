@@ -125,10 +125,16 @@ export default function ReviewItems() {
   const handleSantaSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Normalize URL - prepend https:// if it doesn't start with it
+      let normalizedUrl = santaFormData.url;
+      if (normalizedUrl && !normalizedUrl.startsWith('https://') && !normalizedUrl.startsWith('http://')) {
+        normalizedUrl = 'https://' + normalizedUrl;
+      }
+
       const itemData = {
         title: santaFormData.title,
         description: santaFormData.description,
-        url: santaFormData.url,
+        url: normalizedUrl,
         price: parseFloat(santaFormData.price),
         child: santaFormData.child,
         status: 'approved',
@@ -1238,8 +1244,42 @@ export default function ReviewItems() {
       )}
 
       {showSantaModal && (
-        <div className='modal-overlay' onClick={() => setShowSantaModal(false)}>
-          <div className='modal' onClick={(e) => e.stopPropagation()}>
+        <div className='modal-overlay'>
+          <div className='modal' onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
+            <button
+              type='button'
+              onClick={() => setShowSantaModal(false)}
+              style={{
+                position: 'absolute',
+                top: '12px',
+                right: '12px',
+                background: 'transparent',
+                border: 'none',
+                fontSize: '24px',
+                cursor: 'pointer',
+                padding: '4px',
+                lineHeight: '1',
+                color: '#6b7280',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '32px',
+                height: '32px',
+                borderRadius: '4px',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#f3f4f6';
+                e.currentTarget.style.color = '#1f2937';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = '#6b7280';
+              }}
+              title="Close"
+            >
+              ×
+            </button>
             <h2>🎅 Add Secret Santa Gift</h2>
             <p style={{ marginBottom: '20px', color: '#718096' }}>
               This gift will be approved and visible to you, but hidden from the
@@ -1249,23 +1289,59 @@ export default function ReviewItems() {
             <form onSubmit={handleSantaSubmit}>
               <div className='input-group'>
                 <label>Kid *</label>
-                <select
-                  value={santaFormData.child}
-                  onChange={(e) =>
-                    setSantaFormData({
-                      ...santaFormData,
-                      child: e.target.value,
-                    })
-                  }
-                  required
-                >
-                  <option value=''>Select a kid</option>
-                  {childrenList.map((kid) => (
-                    <option key={kid.id} value={kid.id}>
-                      {kid.name}
-                    </option>
-                  ))}
-                </select>
+                <div style={{ position: 'relative' }}>
+                  <select
+                    value={santaFormData.child}
+                    onChange={(e) =>
+                      setSantaFormData({
+                        ...santaFormData,
+                        child: e.target.value,
+                      })
+                    }
+                    required
+                    style={{
+                      padding: '10px 16px',
+                      paddingRight: '40px',
+                      fontSize: '16px',
+                      border: '1px solid var(--green-dark)',
+                      borderRadius: '0',
+                      background: 'white',
+                      color: 'var(--green-dark)',
+                      cursor: 'pointer',
+                      width: '100%',
+                      appearance: 'none',
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                      outline: 'none',
+                    }}
+                  >
+                    <option value=''>Select a kid</option>
+                    {[...childrenList]
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((kid) => (
+                        <option key={kid.id} value={kid.id}>
+                          {kid.name}
+                        </option>
+                      ))}
+                  </select>
+                  <svg
+                    xmlns='http://www.w3.org/2000/svg'
+                    height='24px'
+                    viewBox='0 0 24 24'
+                    width='24px'
+                    fill='var(--green-dark)'
+                    style={{
+                      position: 'absolute',
+                      right: '8px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    <path d='M0 0h24v24H0V0z' fill='none' />
+                    <path d='M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z' />
+                  </svg>
+                </div>
               </div>
 
               <div className='input-group'>
@@ -1301,18 +1377,30 @@ export default function ReviewItems() {
               <div className='input-group'>
                 <label>Price *</label>
                 <input
-                  type='number'
-                  step='0.01'
-                  min='0'
-                  value={santaFormData.price}
-                  onChange={(e) =>
+                  type='text'
+                  inputMode='decimal'
+                  value={santaFormData.price ? `$${santaFormData.price}` : ''}
+                  onChange={(e) => {
+                    let value = e.target.value.replace(/[^0-9.]/g, '');
+                    // Limit to 2 decimal places
+                    const parts = value.split('.');
+                    if (parts.length > 2) {
+                      value = parts[0] + '.' + parts.slice(1).join('');
+                    }
+                    if (parts[1] && parts[1].length > 2) {
+                      value = parts[0] + '.' + parts[1].substring(0, 2);
+                    }
                     setSantaFormData({
                       ...santaFormData,
-                      price: e.target.value,
-                    })
-                  }
+                      price: value,
+                    });
+                  }}
                   required
-                  placeholder='0.00'
+                  placeholder='$0.00'
+                  style={{
+                    appearance: 'none',
+                    MozAppearance: 'textfield',
+                  }}
                 />
               </div>
 
@@ -1321,9 +1409,14 @@ export default function ReviewItems() {
                 <input
                   type='url'
                   value={santaFormData.url}
-                  onChange={(e) =>
-                    setSantaFormData({ ...santaFormData, url: e.target.value })
-                  }
+                  onChange={(e) => {
+                    let value = e.target.value;
+                    // Auto-prepend https:// if user starts with www.
+                    if (value.startsWith('www.') && !value.includes('://')) {
+                      value = 'https://' + value;
+                    }
+                    setSantaFormData({ ...santaFormData, url: value });
+                  }}
                   placeholder='https://...'
                 />
               </div>

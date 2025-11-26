@@ -563,8 +563,42 @@ export default function ChildWishlist() {
       </div>
 
       {showModal && (
-        <div className='modal-overlay' onClick={() => setShowModal(false)}>
-          <div className='modal' onClick={(e) => e.stopPropagation()}>
+        <div className='modal-overlay'>
+          <div className='modal' onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
+            <button
+              type='button'
+              onClick={() => setShowModal(false)}
+              style={{
+                position: 'absolute',
+                top: '12px',
+                right: '12px',
+                background: 'transparent',
+                border: 'none',
+                fontSize: '24px',
+                cursor: 'pointer',
+                padding: '4px',
+                lineHeight: '1',
+                color: '#6b7280',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '32px',
+                height: '32px',
+                borderRadius: '4px',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#f3f4f6';
+                e.currentTarget.style.color = '#1f2937';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = '#6b7280';
+              }}
+              title="Close"
+            >
+              ×
+            </button>
             <h2>{editingItem ? 'Edit Item' : 'Add New Item'}</h2>
 
             <form onSubmit={handleSubmit}>
@@ -597,9 +631,17 @@ export default function ChildWishlist() {
                 <input
                   type='text'
                   inputMode='decimal'
-                  value={formData.price}
+                  value={formData.price ? `$${formData.price}` : ''}
                   onChange={(e) => {
-                    const value = e.target.value.replace(/[^0-9.]/g, '');
+                    let value = e.target.value.replace(/[^0-9.]/g, '');
+                    // Limit to 2 decimal places
+                    const parts = value.split('.');
+                    if (parts.length > 2) {
+                      value = parts[0] + '.' + parts.slice(1).join('');
+                    }
+                    if (parts[1] && parts[1].length > 2) {
+                      value = parts[0] + '.' + parts[1].substring(0, 2);
+                    }
                     setFormData({ ...formData, price: value });
                   }}
                   required
