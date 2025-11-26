@@ -774,7 +774,8 @@ export default function ReviewItems() {
                             {item.description}
                           </div>
                         )}
-                        {hasReservation && (
+                        {/* Only show reservation info for child items and Santa gifts, not parent's own wishlist items */}
+                        {hasReservation && !item.parent && (
                           <div
                             style={{
                               background: '#dbeafe',
@@ -978,21 +979,60 @@ export default function ReviewItems() {
                           </button>
                         )}
 
-                        {item.status === 'rejected' && (
+                        {/* Unapprove button - only for child items that are approved */}
+                        {item.status === 'approved' && item.child && !item.parent && (
                           <button
                             onClick={() => handleUnapprove(item.id)}
                             className='btn btn-secondary'
                             style={{
                               padding: '6px 12px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
                             }}
-                            title='Return to Pending'
+                            title='Unapprove'
                           >
-                            Unreject
+                            <svg
+                              xmlns='http://www.w3.org/2000/svg'
+                              height='18px'
+                              viewBox='0 -960 960 960'
+                              width='18px'
+                              fill='currentColor'
+                            >
+                              <path d='M280-200v-80h284q63 0 109.5-40T720-420q0-60-46.5-100T564-560H312l104 104-56 56-200-200 200-200 56 56-104 104h252q97 0 166.5 63T800-420q0 94-69.5 157T564-200H280Z'/>
+                            </svg>
                           </button>
                         )}
 
-                        {/* Delete button - for child items and Santa gifts - always rightmost */}
-                        {((item.from_santa && item.status === 'approved') || (!item.parent && item.child)) && (
+                        {/* Unreject button - only for child items that are rejected */}
+                        {item.status === 'rejected' && item.child && !item.parent && (
+                          <button
+                            onClick={() => handleUnapprove(item.id)}
+                            className='btn btn-secondary'
+                            style={{
+                              padding: '6px 12px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                            title='Unreject'
+                          >
+                            <svg
+                              xmlns='http://www.w3.org/2000/svg'
+                              height='18px'
+                              viewBox='0 -960 960 960'
+                              width='18px'
+                              fill='currentColor'
+                            >
+                              <path d='M280-200v-80h284q63 0 109.5-40T720-420q0-60-46.5-100T564-560H312l104 104-56 56-200-200 200-200 56 56-104 104h252q97 0 166.5 63T800-420q0 94-69.5 157T564-200H280Z'/>
+                            </svg>
+                          </button>
+                        )}
+
+                        {/* Delete button - for child items, Santa gifts, and parent's own wishlist items */}
+                        {((item.from_santa && item.status === 'approved') ||
+                          (item.child && !item.parent) ||
+                          (item.parent === currentUser?.id)) && (
                           <button
                             onClick={() => openDeleteModal(item)}
                             className='btn'

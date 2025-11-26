@@ -49,7 +49,40 @@ export default function FamilyView() {
       // Load approved items
       let visibleItems = [];
       try {
-        const allApprovedItems = await itemsAPI.listApproved();
+        const pb = (await import('../lib/pocketbase.js')).default;
+        // Fetch with proper expansion for both child and parent items
+        const allApprovedItems = await pb.collection('items').getFullList({
+          filter: 'status = "approved"',
+          expand: 'child,parent,reservations_via_item,reservations_via_item.reserved_by',
+          sort: '-approved_at',
+        });
+
+        // Fetch all parent users separately (in case expand didn't work due to viewRule)
+        const parentIds = [...new Set(allApprovedItems.filter(item => item.parent).map(item => item.parent))];
+        let parentsMap = {};
+
+        if (parentIds.length > 0) {
+          try {
+            const parents = await pb.collection('users').getFullList({
+              filter: parentIds.map(id => `id = "${id}"`).join(' || ')
+            });
+            parentsMap = parents.reduce((acc, parent) => {
+              acc[parent.id] = parent;
+              return acc;
+            }, {});
+          } catch (err) {
+            console.warn('Could not fetch parent users:', err);
+          }
+        }
+
+        // Manually attach parent data if expand didn't work
+        allApprovedItems.forEach(item => {
+          if (item.parent && !item.expand?.parent && parentsMap[item.parent]) {
+            if (!item.expand) item.expand = {};
+            item.expand.parent = parentsMap[item.parent];
+          }
+        });
+
         // Filter out "from Santa" items - family shouldn't see these
         visibleItems = allApprovedItems.filter((item) => !item.from_santa);
       } catch (err) {
@@ -225,7 +258,10 @@ export default function FamilyView() {
       <div className='header'>
         <div className='header-content'>
           <h1>🎄 Family Gift List</h1>
-          <button onClick={handleLogout} className='btn btn-secondary'>
+          <button onClick={handleLogout} className='btn btn-secondary' style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor">
+              <path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h280v80H200Zm440-160-55-58 102-102H360v-80h327L585-622l55-58 200 200-200 200Z"/>
+            </svg>
             Logout
           </button>
         </div>
@@ -250,7 +286,7 @@ export default function FamilyView() {
                 color: 'var(--green-dark)',
               }}
             >
-              Filter by Kid:
+              Filter by Person:
             </label>
             <div style={{ position: 'relative', minWidth: '200px' }}>
               <select
@@ -272,7 +308,7 @@ export default function FamilyView() {
                   outline: 'none',
                 }}
               >
-                <option value='all'>All Kids</option>
+                <option value='all'>Everyone</option>
                 {allKidNames.map((kidName) => (
                   <option key={kidName} value={kidName}>
                     {kidName}
@@ -336,7 +372,9 @@ export default function FamilyView() {
             </p>
           </div>
         ) : (
-          Object.entries(itemsByKid).map(([kidName, kidItems]) => (
+          Object.entries(itemsByKid)
+            .sort(([nameA], [nameB]) => nameA.localeCompare(nameB))
+            .map(([kidName, kidItems]) => (
             <div
               key={kidName}
               style={{
