@@ -2,7 +2,6 @@ import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { auth } from '../lib/pocketbase';
 import ManageChildren from '../components/ManageChildren';
 import ReviewItems from '../components/ReviewItems';
-import EquityDashboard from '../components/EquityDashboard';
 import ManageFamily from '../components/ManageFamily';
 import ParentWishlist from './ParentWishlist';
 
@@ -32,17 +31,11 @@ export default function ParentDashboard() {
             >
               Kids
             </Link>
-            <Link 
-              to="/parent/review" 
+            <Link
+              to="/parent/review"
               className={isActive('/parent/review') ? 'active' : ''}
             >
               Review Items
-            </Link>
-            <Link 
-              to="/parent/equity" 
-              className={isActive('/parent/equity') ? 'active' : ''}
-            >
-              Equity Dashboard
             </Link>
             <Link
               to="/parent/family"
@@ -70,7 +63,6 @@ export default function ParentDashboard() {
         <Routes>
           <Route index element={<ManageChildren />} />
           <Route path="review" element={<ReviewItems />} />
-          <Route path="equity" element={<EquityDashboard />} />
           <Route path="family" element={<ManageFamily />} />
           <Route path="wishlist" element={<ParentWishlist />} />
         </Routes>
