@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: wishlist-backend
     ports:
-      - '8090:8090'
+      - "8090:8090"
     volumes:
       - ./backend/pb_data:/app/pb_data
     environment:
@@ -18,12 +18,12 @@ services:
     healthcheck:
       test:
         [
-          'CMD',
-          'wget',
-          '--no-verbose',
-          '--tries=1',
-          '--spider',
-          'http://localhost:8090/api/health',
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8090/api/health",
         ]
       interval: 30s
       timeout: 3s
@@ -36,9 +36,10 @@ services:
       dockerfile: Dockerfile
       args:
         - VITE_POCKETBASE_URL=/
+    image: wishlist-frontend:latest
     container_name: wishlist-frontend
     ports:
-      - '80:80'
+      - "80:80"
     depends_on:
       backend:
         condition: service_healthy

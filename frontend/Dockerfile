@@ -12,6 +12,10 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Accept build argument for PocketBase URL
+ARG VITE_POCKETBASE_URL=/
+ENV VITE_POCKETBASE_URL=$VITE_POCKETBASE_URL
+
 # Build the app
 RUN npm run build
 
