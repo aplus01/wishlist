@@ -505,11 +505,14 @@ export default function FamilyView() {
                                 <div
                                   style={{
                                     background: '#d1fae5',
-                                    padding: '8px',
+                                    padding: '10px 20px',
                                     textAlign: 'center',
                                     color: '#065f46',
                                     fontWeight: 600,
-                                    marginBottom: '8px',
+                                    fontSize: '16px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
                                   }}
                                 >
                                   ✓ Purchased

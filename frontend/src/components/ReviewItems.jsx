@@ -41,9 +41,41 @@ export default function ReviewItems() {
     try {
       const userId = authStore.user()?.id;
       const childrenData = await children.list(userId);
-      setChildrenList(childrenData);
 
+      // Get all items to find parents with wishlists
       const allItemsList = await items.list();
+
+      // Extract unique parent IDs from items that have a parent field
+      const parentIds = [...new Set(
+        allItemsList
+          .filter(item => item.parent)
+          .map(item => item.parent)
+      )];
+
+      // Combine children with parents who have wishlists
+      // Map children to have type 'child' and parents to have type 'parent'
+      const childrenWithType = childrenData.map(child => ({
+        ...child,
+        type: 'child',
+        displayName: child.name
+      }));
+
+      const parentsWithWishlists = allItemsList
+        .filter(item => item.parent && item.expand?.parent)
+        .reduce((acc, item) => {
+          const parent = item.expand.parent;
+          if (!acc.find(p => p.id === parent.id)) {
+            acc.push({
+              id: parent.id,
+              name: parent.name,
+              type: 'parent',
+              displayName: parent.name
+            });
+          }
+          return acc;
+        }, []);
+
+      setChildrenList([...childrenWithType, ...parentsWithWishlists]);
       setAllItems(allItemsList);
     } catch (err) {
       console.error('Error loading data:', err);
@@ -238,8 +270,8 @@ export default function ReviewItems() {
 
   // Helper function to check if an item matches the non-status filters
   const matchesFilters = (item) => {
-    // Filter by kid
-    const kidMatch = kidFilter === 'all' || item.child === kidFilter;
+    // Filter by kid (or parent)
+    const kidMatch = kidFilter === 'all' || item.child === kidFilter || item.parent === kidFilter;
 
     // Normalize reservations to always be an array
     const reservations = item.expand?.reservations_via_item
@@ -296,21 +328,8 @@ export default function ReviewItems() {
   return (
     <div className='page-content'>
       <div style={{ marginBottom: '30px' }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'start',
-            marginBottom: '16px',
-          }}
-        >
-          <div>
-            <h2>Review Items</h2>
-            <p>
-              Review and approve items from your kids' wishlists. Approved items
-              will be visible to family members.
-            </p>
-          </div>
+        <div className='review-header'>
+          <h2>Review Items</h2>
           <button
             onClick={() => {
               setSantaFormData({
@@ -328,6 +347,10 @@ export default function ReviewItems() {
             🎅 Add Secret Santa Gift
           </button>
         </div>
+        <p className='review-description'>
+          Review and approve items from your kids' wishlists. Approved items
+          will be visible to family members.
+        </p>
 
         <div
           style={{
@@ -368,12 +391,14 @@ export default function ReviewItems() {
                   outline: 'none',
                 }}
               >
-                <option value='all'>All Kids</option>
-                {childrenList.map((kid) => (
-                  <option key={kid.id} value={kid.id}>
-                    {kid.name}
-                  </option>
-                ))}
+                <option value='all'>All</option>
+                {[...childrenList]
+                  .sort((a, b) => a.displayName.localeCompare(b.displayName))
+                  .map((kid) => (
+                    <option key={kid.id} value={kid.id}>
+                      {kid.displayName}
+                    </option>
+                  ))}
               </select>
               <svg
                 xmlns='http://www.w3.org/2000/svg'
@@ -574,174 +599,60 @@ export default function ReviewItems() {
           </p>
         </div>
       ) : (
-        <div
-          style={{
-            overflowX: 'auto',
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-            border: '1px solid #d4d4d4',
-          }}
-        >
-          <table
-            style={{
-              width: '100%',
-              borderCollapse: 'collapse',
-              background: 'white',
-            }}
-          >
-            <thead>
-              <tr
-                style={{
-                  background: 'var(--green-medium)',
-                  color: 'white',
-                }}
-              >
-                <th
-                  style={{
-                    padding: '12px 16px',
-                    textAlign: 'left',
-                    fontWeight: 600,
-                    width: '80px',
-                  }}
-                >
-                  Image
-                </th>
-                <th
-                  style={{
-                    padding: '12px 16px',
-                    textAlign: 'left',
-                    fontWeight: 600,
-                  }}
-                >
-                  Item
-                </th>
-                <th
-                  style={{
-                    padding: '12px 16px',
-                    textAlign: 'left',
-                    fontWeight: 600,
-                    width: '120px',
-                  }}
-                >
-                  Kid
-                </th>
-                <th
-                  style={{
-                    padding: '12px 16px',
-                    textAlign: 'left',
-                    fontWeight: 600,
-                    width: '100px',
-                  }}
-                >
-                  Price
-                </th>
-                <th
-                  style={{
-                    padding: '12px 16px',
-                    textAlign: 'left',
-                    fontWeight: 600,
-                    width: '100px',
-                  }}
-                >
-                  Status
-                </th>
-                <th
-                  style={{
-                    padding: '12px 16px',
-                    textAlign: 'center',
-                    fontWeight: 600,
-                    width: '200px',
-                  }}
-                >
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredItems.map((item) => {
-                const itemReservations = item.expand?.reservations_via_item
-                  ? Array.isArray(item.expand.reservations_via_item)
-                    ? item.expand.reservations_via_item
-                    : [item.expand.reservations_via_item]
-                  : [];
-                const hasReservation = itemReservations.length > 0;
-                const isPurchased = itemReservations.some((res) => res.purchased);
+        <>
+          {/* Table View - Desktop Only */}
+          <div className='review-items-table-wrapper'>
+            <table className='review-items-table'>
+              <thead>
+                <tr>
+                  <th style={{ width: '80px' }}>Image</th>
+                  <th>Item</th>
+                  <th style={{ width: '120px' }}>Kid</th>
+                  <th style={{ width: '100px' }}>Price</th>
+                  <th style={{ width: '100px' }}>Status</th>
+                  <th style={{ width: '150px', textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredItems.map((item) => {
+                  const itemReservations = item.expand?.reservations_via_item
+                    ? Array.isArray(item.expand.reservations_via_item)
+                      ? item.expand.reservations_via_item
+                      : [item.expand.reservations_via_item]
+                    : [];
+                  const hasReservation = itemReservations.length > 0;
+                  const currentUser = authStore.user();
+                  const myReservation = itemReservations.find(
+                    (res) => res.reserved_by === currentUser?.id
+                  );
+                  const isMyOwnItem = item.parent === currentUser?.id && !item.from_santa;
 
-                // Check if this item is reserved by the current parent
-                const currentUser = authStore.user();
-                const myReservation = itemReservations.find(
-                  (res) => res.reserved_by === currentUser?.id
-                );
-
-                // Parents can reserve Santa gifts (even though they created them) to coordinate purchases
-                // Parents should not see reservation buttons on non-Santa items they created
-                const isMyOwnItem = item.parent === currentUser?.id && !item.from_santa;
-
-                // Only show reservation actions on approved items (not on parent's own non-Santa items)
-                const canReserve = item.status === 'approved' && !isMyOwnItem;
-
-                return (
-                  <tr
-                    key={item.id}
-                    style={{
-                      borderBottom: '1px solid #e5e7eb',
-                      background: 'white',
-                    }}
-                  >
-                    <td style={{ padding: '12px 16px' }}>
-                      {item.image ? (
-                        <img
-                          src={getImageUrl(item, item.image, '100x100')}
-                          alt={item.title}
-                          style={{
-                            width: '60px',
-                            height: '60px',
-                            objectFit: 'cover',
-                            borderRadius: '4px',
-                            border: '1px solid #e5e7eb',
-                          }}
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            width: '60px',
-                            height: '60px',
-                            background: 'var(--placeholder-bg)',
-                            borderRadius: '4px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'var(--placeholder-icon)',
-                            fontSize: '24px',
-                          }}
-                        >
-                          🎁
-                        </div>
-                      )}
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <div>
-                        <div
-                          style={{
-                            fontWeight: 600,
-                            marginBottom: '4px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            flexWrap: 'wrap',
-                          }}
-                        >
+                  return (
+                    <tr key={item.id}>
+                      <td>
+                        {item.image ? (
+                          <img
+                            src={getImageUrl(item, item.image, '100x100')}
+                            alt={item.title}
+                            style={{
+                              width: '60px',
+                              height: '60px',
+                              objectFit: 'cover',
+                              borderRadius: '4px',
+                            }}
+                          />
+                        ) : (
+                          <div style={{ fontSize: '32px' }}>🎁</div>
+                        )}
+                      </td>
+                      <td>
+                        <div style={{ fontWeight: 600, marginBottom: '4px' }}>
                           {item.url ? (
                             <a
                               href={item.url}
                               target='_blank'
                               rel='noopener noreferrer'
-                              style={{
-                                color: '#1E7B46',
-                                textDecoration: 'underline',
-                              }}
+                              style={{ color: '#1E7B46', textDecoration: 'underline' }}
                             >
                               {item.title}
                             </a>
@@ -749,84 +660,250 @@ export default function ReviewItems() {
                             item.title
                           )}
                           {item.from_santa && (
-                            <span
-                              style={{
-                                background: '#991b1b',
-                                color: '#ffffff',
-                                padding: '2px 8px',
-                                fontSize: '12px',
-                                fontWeight: 600,
-                                whiteSpace: 'nowrap',
-                              }}
-                            >
+                            <span className='santa-badge' style={{ marginLeft: '8px' }}>
                               🎅 From Santa
                             </span>
                           )}
                         </div>
                         {item.description && (
-                          <div
-                            style={{
-                              fontSize: '14px',
-                              color: '#6b7280',
-                              marginBottom: '4px',
-                            }}
-                          >
+                          <div style={{ fontSize: '14px', color: 'var(--text-medium)' }}>
                             {item.description}
                           </div>
                         )}
-                        {/* Only show reservation info for child items and Santa gifts, not parent's own wishlist items */}
-                        {hasReservation && !item.parent && (
-                          <div
-                            style={{
-                              background: '#dbeafe',
-                              padding: '4px 8px',
-                              borderRadius: '4px',
-                              fontSize: '12px',
-                              color: '#1e40af',
-                              marginTop: '4px',
-                              display: 'inline-block',
-                            }}
-                          >
-                            <strong>Reserved by:</strong>{' '}
-                            {itemReservations[0].expand?.reserved_by?.name ||
-                              'Family member'}
-                            {isPurchased && ' • ✓ Purchased'}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td
-                      style={{
-                        padding: '12px 16px',
-                        fontWeight: 600,
-                        color: '#1E7B46',
+                      </td>
+                      <td>{getPersonName(item)}</td>
+                      <td style={{ fontWeight: 600, color: 'var(--green-dark)' }}>
+                        ${formatCurrency(item.price)}
+                      </td>
+                      <td>
+                        <span className={`badge badge-${item.status}`}>
+                          {item.status}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                          {item.status === 'pending' && (
+                            <>
+                              <button
+                                onClick={() => handleApprove(item.id)}
+                                className='btn btn-success'
+                                style={{ padding: '6px 8px', display: 'inline-flex', alignItems: 'center' }}
+                                title='Approve'
+                              >
+                                <svg xmlns='http://www.w3.org/2000/svg' height='16px' viewBox='0 -960 960 960' width='16px' fill='currentColor'>
+                                  <path d='M720-120H280v-520l280-280 50 50q7 7 11.5 19t4.5 23v14l-44 174h258q32 0 56 24t24 56v80q0 7-2 15t-4 15L794-168q-9 20-30 34t-44 14Zm-360-80h360l120-280v-80H480l54-220-174 174v406Zm0-406v406-406Zm-80-34v80H160v360h120v80H80v-520h200Z' />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => openRejectModal(item)}
+                                className='btn btn-danger'
+                                style={{ padding: '6px 8px', display: 'inline-flex', alignItems: 'center' }}
+                                title='Reject'
+                              >
+                                <svg xmlns='http://www.w3.org/2000/svg' height='16px' viewBox='0 -960 960 960' width='16px' fill='currentColor'>
+                                  <path d='M240-840h440v520L400-40l-50-50q-7-7-11.5-19t-4.5-23v-14l44-174H120q-32 0-56-24t-24-56v-80q0-7 2-15t4-15l120-282q9-20 30-34t44-14Zm360 80H240L120-480v80h360l-54 220 174-174v-406Zm0 406v-406 406Zm80 34v-80h120v-360H680v-80h200v520H680Z' />
+                                </svg>
+                              </button>
+                            </>
+                          )}
+                          {item.status === 'approved' && !isMyOwnItem && !hasReservation && (
+                            <button
+                              onClick={() => handleReserve(item.id)}
+                              className='btn btn-primary'
+                              style={{ padding: '6px 8px', display: 'inline-flex', alignItems: 'center' }}
+                              title='Reserve'
+                            >
+                              <svg xmlns='http://www.w3.org/2000/svg' height='16px' viewBox='0 0 24 24' width='16px' fill='currentColor'>
+                                <path d='M0 0h24v24H0z' fill='none'/>
+                                <path d='M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76l1-1.36 1 1.36L15.38 12 17 10.83 14.92 8H20v6z'/>
+                              </svg>
+                            </button>
+                          )}
+                          {item.status === 'approved' && myReservation && !myReservation.purchased && (
+                            <>
+                              <button
+                                onClick={() => handleMarkPurchased(myReservation.id)}
+                                className='btn btn-success'
+                                style={{ padding: '6px 8px', display: 'inline-flex', alignItems: 'center' }}
+                                title='Mark as Purchased'
+                              >
+                                <svg xmlns='http://www.w3.org/2000/svg' height='16px' viewBox='0 0 24 24' width='16px' fill='currentColor'>
+                                  <path d='M0 0h24v24H0z' fill='none'/>
+                                  <path d='M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z'/>
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => openUnreserveModal(myReservation.id)}
+                                className='btn btn-secondary'
+                                style={{ padding: '6px 8px', display: 'inline-flex', alignItems: 'center' }}
+                                title='Unreserve'
+                              >
+                                <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16px' height='16px'>
+                                  <defs>
+                                    <mask id='giftMask'>
+                                      <rect width='24' height='24' fill='white'/>
+                                      <line x1='4' y1='4' x2='20' y2='20' stroke='black' stroke-width='3.5' stroke-linecap='round'/>
+                                    </mask>
+                                  </defs>
+                                  <path mask='url(#giftMask)' fill='currentColor' d='M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76l1-1.36 1 1.36L15.38 12 17 10.83 14.92 8H20v6z'/>
+                                  <line x1='4' y1='4' x2='20' y2='20' stroke='currentColor' stroke-width='2' stroke-linecap='round'/>
+                                </svg>
+                              </button>
+                            </>
+                          )}
+                          {item.status === 'approved' && myReservation && myReservation.purchased && (
+                            <button
+                              onClick={() => handleMarkNotPurchased(myReservation.id)}
+                              className='btn btn-secondary'
+                              style={{ padding: '6px 8px', display: 'inline-flex', alignItems: 'center' }}
+                              title='Mark Not Purchased'
+                            >
+                              <svg xmlns='http://www.w3.org/2000/svg' height='16px' viewBox='0 0 24 24' width='16px' fill='currentColor'>
+                                <path d='M0 0h24v24H0z' fill='none'/>
+                                <path d='M12.5 6.9c1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-.53.12-1.03.3-1.48.54l1.47 1.47c.41-.17.91-.27 1.51-.27zM5.33 4.06L4.06 5.33 7.5 8.77c0 2.08 1.56 3.21 3.91 3.91l3.51 3.51c-.34.48-1.05.91-2.42.91-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c.96-.18 1.82-.55 2.45-1.12l2.22 2.22 1.27-1.27L5.33 4.06z'/>
+                              </svg>
+                            </button>
+                          )}
+                          {item.status === 'approved' && item.child && !item.parent && (
+                            <button
+                              onClick={() => handleUnapprove(item.id)}
+                              className='btn btn-secondary'
+                              style={{ padding: '6px 8px', display: 'inline-flex', alignItems: 'center' }}
+                              title='Unapprove'
+                            >
+                              <svg xmlns='http://www.w3.org/2000/svg' height='16px' viewBox='0 -960 960 960' width='16px' fill='currentColor'>
+                                <path d='M280-200v-80h284q63 0 109.5-40T720-420q0-60-46.5-100T564-560H312l104 104-56 56-200-200 200-200 56 56-104 104h252q97 0 166.5 63T800-420q0 94-69.5 157T564-200H280Z'/>
+                              </svg>
+                            </button>
+                          )}
+                          {item.status === 'rejected' && item.child && !item.parent && (
+                            <button
+                              onClick={() => handleUnapprove(item.id)}
+                              className='btn btn-secondary'
+                              style={{ padding: '6px 8px', display: 'inline-flex', alignItems: 'center' }}
+                              title='Unreject'
+                            >
+                              <svg xmlns='http://www.w3.org/2000/svg' height='16px' viewBox='0 -960 960 960' width='16px' fill='currentColor'>
+                                <path d='M280-200v-80h284q63 0 109.5-40T720-420q0-60-46.5-100T564-560H312l104 104-56 56-200-200 200-200 56 56-104 104h252q97 0 166.5 63T800-420q0 94-69.5 157T564-200H280Z'/>
+                              </svg>
+                            </button>
+                          )}
+                          {((item.from_santa && item.status === 'approved') || (item.child && !item.parent) || (item.parent === currentUser?.id)) && (
+                            <button
+                              onClick={() => openDeleteModal(item)}
+                              className='btn'
+                              style={{ padding: '6px 8px', display: 'inline-flex', alignItems: 'center', background: 'transparent', color: '#C41E3A', border: '1px solid #C41E3A' }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = '#C41E3A'; e.currentTarget.style.color = '#ffffff'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#C41E3A'; }}
+                              title='Delete'
+                            >
+                              <svg xmlns='http://www.w3.org/2000/svg' height='16px' viewBox='0 -960 960 960' width='16px' fill='currentColor'>
+                                <path d='M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z' />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Grid View - Mobile Only */}
+          <div className='review-items-grid'>
+          {filteredItems.map((item) => {
+                const itemReservations = item.expand?.reservations_via_item
+              ? Array.isArray(item.expand.reservations_via_item)
+                ? item.expand.reservations_via_item
+                : [item.expand.reservations_via_item]
+              : [];
+            const hasReservation = itemReservations.length > 0;
+            const isPurchased = itemReservations.some((res) => res.purchased);
+
+            // Check if this item is reserved by the current parent
+            const currentUser = authStore.user();
+            const myReservation = itemReservations.find(
+              (res) => res.reserved_by === currentUser?.id
+            );
+
+            // Parents can reserve Santa gifts (even though they created them) to coordinate purchases
+            // Parents should not see reservation buttons on non-Santa items they created
+            const isMyOwnItem = item.parent === currentUser?.id && !item.from_santa;
+
+            // Only show reservation actions on approved items (not on parent's own non-Santa items)
+            const canReserve = item.status === 'approved' && !isMyOwnItem;
+
+            return (
+              <div key={item.id} className='review-item-card'>
+                <div className='review-item-image'>
+                  {item.image ? (
+                    <img
+                      src={getImageUrl(item, item.image, '200x200')}
+                      alt={item.title}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
                       }}
-                    >
-                      {getPersonName(item)}
-                    </td>
-                    <td
-                      style={{
-                        padding: '12px 16px',
-                        fontWeight: 600,
-                        color: '#1E7B46',
-                      }}
-                    >
-                      ${formatCurrency(item.price)}
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <span className={`badge badge-${item.status}`}>
-                        {item.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                      <div
-                        style={{
-                          display: 'flex',
-                          gap: '8px',
-                          justifyContent: 'flex-end',
-                          flexWrap: 'wrap',
-                        }}
-                      >
+                    />
+                  ) : (
+                    <div className='review-item-placeholder'>
+                      🎁
+                    </div>
+                  )}
+                </div>
+
+                <div className='review-item-content'>
+                  <div className='review-item-header'>
+                    <div className='review-item-title-row'>
+                      {item.url ? (
+                        <a
+                          href={item.url}
+                          target='_blank'
+                          rel='noopener noreferrer'
+                          className='review-item-title'
+                        >
+                          {item.title}
+                        </a>
+                      ) : (
+                        <h3 className='review-item-title'>{item.title}</h3>
+                      )}
+                      {item.from_santa && (
+                        <span className='santa-badge'>
+                          🎅 From Santa
+                        </span>
+                      )}
+                    </div>
+                    <span className={`badge badge-${item.status}`}>
+                      {item.status}
+                    </span>
+                  </div>
+
+                  {item.description && (
+                    <p className='review-item-description'>
+                      {item.description}
+                    </p>
+                  )}
+
+                  <div className='review-item-meta'>
+                    <div className='review-item-meta-item'>
+                      <strong>Kid:</strong> {getPersonName(item)}
+                    </div>
+                    <div className='review-item-meta-item'>
+                      <strong>Price:</strong> ${formatCurrency(item.price)}
+                    </div>
+                  </div>
+
+                  {hasReservation && !item.parent && (
+                    <div className='review-item-reservation'>
+                      <strong>Reserved by:</strong>{' '}
+                      {itemReservations[0].expand?.reserved_by?.name ||
+                        'Family member'}
+                      {isPurchased && ' • ✓ Purchased'}
+                    </div>
+                  )}
+
+                  <div className='review-item-actions'>
                         {item.status === 'pending' && (
                           <>
                             <button
@@ -837,6 +914,7 @@ export default function ReviewItems() {
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
+                                gap: '6px',
                               }}
                               title='Approve'
                             >
@@ -849,6 +927,7 @@ export default function ReviewItems() {
                               >
                                 <path d='M720-120H280v-520l280-280 50 50q7 7 11.5 19t4.5 23v14l-44 174h258q32 0 56 24t24 56v80q0 7-2 15t-4 15L794-168q-9 20-30 34t-44 14Zm-360-80h360l120-280v-80H480l54-220-174 174v406Zm0-406v406-406Zm-80-34v80H160v360h120v80H80v-520h200Z' />
                               </svg>
+                              <span className='btn-text-mobile'>Approve</span>
                             </button>
                             <button
                               onClick={() => openRejectModal(item)}
@@ -858,6 +937,7 @@ export default function ReviewItems() {
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
+                                gap: '6px',
                               }}
                               title='Reject'
                             >
@@ -870,6 +950,7 @@ export default function ReviewItems() {
                               >
                                 <path d='M240-840h440v520L400-40l-50-50q-7-7-11.5-19t-4.5-23v-14l44-174H120q-32 0-56-24t-24-56v-80q0-7 2-15t4-15l120-282q9-20 30-34t44-14Zm360 80H240L120-480v80h360l-54 220 174-174v-406Zm0 406v-406 406Zm80 34v-80h120v-360H680v-80h200v520H680Z' />
                               </svg>
+                              <span className='btn-text-mobile'>Reject</span>
                             </button>
                           </>
                         )}
@@ -883,6 +964,7 @@ export default function ReviewItems() {
                               display: 'inline-flex',
                               alignItems: 'center',
                               justifyContent: 'center',
+                              gap: '6px',
                             }}
                             title='Reserve'
                           >
@@ -896,6 +978,7 @@ export default function ReviewItems() {
                               <path d='M0 0h24v24H0z' fill='none'/>
                               <path d='M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76l1-1.36 1 1.36L15.38 12 17 10.83 14.92 8H20v6z'/>
                             </svg>
+                            <span className='btn-text-mobile'>Reserve</span>
                           </button>
                         )}
 
@@ -910,6 +993,7 @@ export default function ReviewItems() {
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
+                                gap: '6px',
                               }}
                               title='Mark as Purchased'
                             >
@@ -923,6 +1007,7 @@ export default function ReviewItems() {
                                 <path d='M0 0h24v24H0z' fill='none'/>
                                 <path d='M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z'/>
                               </svg>
+                              <span className='btn-text-mobile'>Purchased</span>
                             </button>
                             <button
                               onClick={() => openUnreserveModal(myReservation.id)}
@@ -932,6 +1017,7 @@ export default function ReviewItems() {
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
+                                gap: '6px',
                               }}
                               title='Unreserve'
                             >
@@ -950,6 +1036,7 @@ export default function ReviewItems() {
                                 <path mask='url(#giftMask)' fill='currentColor' d='M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76l1-1.36 1 1.36L15.38 12 17 10.83 14.92 8H20v6z'/>
                                 <line x1='4' y1='4' x2='20' y2='20' stroke='currentColor' stroke-width='2' stroke-linecap='round'/>
                               </svg>
+                              <span className='btn-text-mobile'>Unreserve</span>
                             </button>
                           </>
                         )}
@@ -963,6 +1050,7 @@ export default function ReviewItems() {
                               display: 'inline-flex',
                               alignItems: 'center',
                               justifyContent: 'center',
+                              gap: '6px',
                             }}
                             title='Mark Not Purchased'
                           >
@@ -976,6 +1064,7 @@ export default function ReviewItems() {
                               <path d='M0 0h24v24H0z' fill='none'/>
                               <path d='M12.5 6.9c1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-.53.12-1.03.3-1.48.54l1.47 1.47c.41-.17.91-.27 1.51-.27zM5.33 4.06L4.06 5.33 7.5 8.77c0 2.08 1.56 3.21 3.91 3.91l3.51 3.51c-.34.48-1.05.91-2.42.91-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c.96-.18 1.82-.55 2.45-1.12l2.22 2.22 1.27-1.27L5.33 4.06z'/>
                             </svg>
+                            <span className='btn-text-mobile'>Not Purchased</span>
                           </button>
                         )}
 
@@ -989,6 +1078,7 @@ export default function ReviewItems() {
                               display: 'inline-flex',
                               alignItems: 'center',
                               justifyContent: 'center',
+                              gap: '6px',
                             }}
                             title='Unapprove'
                           >
@@ -1001,6 +1091,7 @@ export default function ReviewItems() {
                             >
                               <path d='M280-200v-80h284q63 0 109.5-40T720-420q0-60-46.5-100T564-560H312l104 104-56 56-200-200 200-200 56 56-104 104h252q97 0 166.5 63T800-420q0 94-69.5 157T564-200H280Z'/>
                             </svg>
+                            <span className='btn-text-mobile'>Unapprove</span>
                           </button>
                         )}
 
@@ -1014,6 +1105,7 @@ export default function ReviewItems() {
                               display: 'inline-flex',
                               alignItems: 'center',
                               justifyContent: 'center',
+                              gap: '6px',
                             }}
                             title='Unreject'
                           >
@@ -1026,6 +1118,7 @@ export default function ReviewItems() {
                             >
                               <path d='M280-200v-80h284q63 0 109.5-40T720-420q0-60-46.5-100T564-560H312l104 104-56 56-200-200 200-200 56 56-104 104h252q97 0 166.5 63T800-420q0 94-69.5 157T564-200H280Z'/>
                             </svg>
+                            <span className='btn-text-mobile'>Unreject</span>
                           </button>
                         )}
 
@@ -1041,6 +1134,7 @@ export default function ReviewItems() {
                               display: 'inline-flex',
                               alignItems: 'center',
                               justifyContent: 'center',
+                              gap: '6px',
                               background: 'transparent',
                               color: '#C41E3A',
                               border: '1px solid #C41E3A',
@@ -1064,16 +1158,30 @@ export default function ReviewItems() {
                             >
                               <path d='M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z' />
                             </svg>
+                            <span className='btn-text-mobile'>Delete</span>
                           </button>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+
+                        {/* Info message when reservation not available */}
+                        {item.status === 'approved' && isMyOwnItem && (
+                          <div className='action-info-message'>
+                            This is your own item
+                          </div>
+                        )}
+
+                        {/* Info message when item is reserved by someone else */}
+                        {item.status === 'approved' && hasReservation && !myReservation && !isMyOwnItem && (
+                          <div className='action-info-message'>
+                            Reserved by {itemReservations[0].expand?.reserved_by?.name || 'another family member'}
+                          </div>
+                        )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
+        </>
       )}
 
       {showRejectModal && (

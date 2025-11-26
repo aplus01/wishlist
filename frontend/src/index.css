@@ -434,6 +434,201 @@ input[type='number'] {
   color: var(--white);
 }
 
+/* Review Items Header */
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 16px;
+}
+
+.review-description {
+  color: var(--text-medium);
+  margin-bottom: 24px;
+}
+
+/* Review Items Grid - hidden on desktop, shown on mobile */
+.review-items-grid {
+  display: none;
+}
+
+/* Review Items Table - shown on desktop, hidden on mobile */
+.review-items-table-wrapper {
+  display: block;
+  overflow-x: auto;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid #d4d4d4;
+}
+
+.review-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.review-items-table thead {
+  background: var(--green-medium);
+  color: white;
+}
+
+.review-items-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.review-items-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.review-items-table tbody tr {
+  height: 88px;
+}
+
+.review-items-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.review-item-card {
+  background: white;
+  border: 1px solid #d4d4d4;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.3s ease;
+}
+
+.review-item-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.review-item-image {
+  width: 100%;
+  height: 200px;
+  background: var(--placeholder-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.review-item-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.review-item-placeholder {
+  font-size: 64px;
+  color: var(--placeholder-icon);
+}
+
+.review-item-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.review-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.review-item-title-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.review-item-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin: 0;
+  text-decoration: none;
+}
+
+a.review-item-title {
+  color: #1E7B46;
+  text-decoration: underline;
+}
+
+a.review-item-title:hover {
+  color: var(--green-dark);
+}
+
+.santa-badge {
+  background: #991b1b;
+  color: #ffffff;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  display: inline-block;
+  width: fit-content;
+}
+
+.review-item-description {
+  font-size: 14px;
+  color: var(--text-medium);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.review-item-meta {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.review-item-meta-item {
+  font-size: 14px;
+  color: var(--text-dark);
+}
+
+.review-item-meta-item strong {
+  color: var(--green-dark);
+}
+
+.review-item-reservation {
+  background: #dbeafe;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #1e40af;
+}
+
+.review-item-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.action-info-message {
+  width: 100%;
+  padding: 10px 12px;
+  background: #f3f4f6;
+  color: #4b5563;
+  font-size: 14px;
+  text-align: center;
+  border-radius: 4px;
+}
+
+.btn-text-mobile {
+  display: inline;
+}
+
 @media (max-width: 768px) {
   .header-content {
     flex-direction: column;
@@ -457,5 +652,62 @@ input[type='number'] {
   .page-content {
     margin: 0 10px 20px;
     padding: 20px;
+  }
+
+  /* Review Items mobile layout */
+  .review-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .review-header h2 {
+    margin-bottom: 12px;
+  }
+
+  .review-header button {
+    width: 100%;
+  }
+
+  .review-description {
+    width: 100%;
+  }
+
+  /* Review Items Grid - show on mobile, hide table */
+  .review-items-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .review-items-table-wrapper {
+    display: none;
+  }
+
+  .review-item-actions {
+    flex-direction: column;
+  }
+
+  .review-item-actions button {
+    width: 100%;
+  }
+
+  /* Hide view toggle button on mobile */
+  .view-toggle-btn {
+    display: none !important;
+  }
+
+  /* Remove min-height on mobile for better space usage */
+  .item-card {
+    min-height: unset;
+  }
+
+  /* Show button text labels on mobile */
+  .btn-text-mobile {
+    display: inline;
+  }
+
+  /* Make add item button full width on mobile */
+  .add-item-btn {
+    width: 100%;
   }
 }

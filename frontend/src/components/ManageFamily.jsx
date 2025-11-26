@@ -113,6 +113,7 @@ export default function ManageFamily() {
             setShowModal(true);
           }}
           className='btn btn-primary'
+          style={{ marginTop: '20px' }}
         >
           + Add Family Member
         </button>

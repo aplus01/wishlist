@@ -267,14 +267,14 @@ export default function ParentWishlist() {
           >
             <button
               onClick={() => setShowModal(true)}
-              className='btn btn-primary'
+              className='btn btn-primary add-item-btn'
             >
               + Add Item to Wishlist
             </button>
 
             <button
               onClick={() => setViewMode(viewMode === 'card' ? 'table' : 'card')}
-              className='btn btn-secondary'
+              className='btn btn-secondary view-toggle-btn'
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -397,39 +397,39 @@ export default function ParentWishlist() {
                       disabled={index === 0}
                       className='btn btn-primary'
                       style={{
-                        width: '40px',
-                        padding: '6px',
+                        padding: '6px 12px',
                         opacity: index === 0 ? 0.5 : 1,
                         cursor: index === 0 ? 'not-allowed' : 'pointer',
-                        display: 'flex',
+                        display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
+                        gap: '6px',
                       }}
                       title={index === 0 ? 'Already at top' : 'Send to Top'}
                     >
                       <svg
                         xmlns='http://www.w3.org/2000/svg'
-                        height='24'
+                        height='18px'
                         viewBox='0 -960 960 960'
-                        width='24'
+                        width='18px'
                         fill='currentColor'
-                        style={{
-                          display: 'block',
-                          transform: 'translateY(2px)',
-                        }}
                       >
                         <path d='M480-544 328-392l-56-56 208-208 208 208-56 56-152-152Zm0-240L328-632l-56-56 208-208 208 208-56 56-152-152Z' />
                       </svg>
+                      <span className='btn-text-mobile'>Top</span>
                     </button>
                     <button
                       onClick={() => handleEdit(item)}
                       className='btn'
                       style={{
-                        width: '40px',
-                        padding: '6px',
+                        padding: '6px 12px',
                         background: 'transparent',
                         color: 'var(--edit-btn)',
                         border: '1px solid var(--edit-btn)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.background = 'var(--edit-btn)';
@@ -443,23 +443,27 @@ export default function ParentWishlist() {
                     >
                       <svg
                         xmlns='http://www.w3.org/2000/svg'
-                        height='24'
+                        height='18px'
                         viewBox='0 -960 960 960'
-                        width='24'
+                        width='18px'
                         fill='currentColor'
                       >
                         <path d='M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z' />
                       </svg>
+                      <span className='btn-text-mobile'>Edit</span>
                     </button>
                     <button
                       onClick={() => openDeleteModal(item.id)}
                       className='btn'
                       style={{
-                        width: '40px',
-                        padding: '6px',
+                        padding: '6px 12px',
                         background: 'transparent',
                         color: '#C41E3A',
                         border: '1px solid #C41E3A',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.background = '#C41E3A';
@@ -473,13 +477,14 @@ export default function ParentWishlist() {
                     >
                       <svg
                         xmlns='http://www.w3.org/2000/svg'
-                        height='24'
+                        height='18px'
                         viewBox='0 -960 960 960'
-                        width='24'
+                        width='18px'
                         fill='currentColor'
                       >
                         <path d='M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z' />
                       </svg>
+                      <span className='btn-text-mobile'>Delete</span>
                     </button>
                   </div>
                 </div>
