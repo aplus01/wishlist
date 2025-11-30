@@ -7,6 +7,7 @@ export default function WishlistTable({
   onEdit,
   onDelete,
   onSendToTop,
+  onEditImage,
 }) {
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
@@ -162,38 +163,68 @@ export default function WishlistTable({
                 {itemIndex + 1}
               </td>
               <td style={{ padding: '12px 16px' }}>
-                {item.image ? (
-                  <img
-                    src={getImageUrl(item, item.image, '100x100')}
-                    alt={item.title}
-                    style={{
-                      width: '60px',
-                      height: '60px',
-                      objectFit: 'cover',
-                      borderRadius: '4px',
-                      border: '1px solid #e5e7eb',
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  {item.image ? (
+                    <img
+                      src={getImageUrl(item, item.image, '100x100')}
+                      alt={item.title}
+                      style={{
+                        width: '60px',
+                        height: '60px',
+                        objectFit: 'cover',
+                        borderRadius: '4px',
+                        border: '1px solid #e5e7eb',
+                      }}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: '60px',
+                        height: '60px',
+                        background: 'var(--placeholder-bg)',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--placeholder-icon)',
+                        fontSize: '24px',
+                      }}
+                    >
+                      🎁
+                    </div>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditImage(item);
                     }}
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <div
                     style={{
-                      width: '60px',
-                      height: '60px',
-                      background: 'var(--placeholder-bg)',
-                      borderRadius: '4px',
+                      position: 'absolute',
+                      bottom: '-4px',
+                      right: '-4px',
+                      background: 'var(--green-dark)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '24px',
+                      height: '24px',
+                      cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: 'var(--placeholder-icon)',
-                      fontSize: '24px',
+                      padding: '0',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
                     }}
+                    title="Edit image"
                   >
-                    🎁
-                  </div>
-                )}
+                    <svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor">
+                      <path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/>
+                    </svg>
+                  </button>
+                </div>
               </td>
               <td style={{ padding: '12px 16px' }}>
                 <div style={{ fontWeight: 600, marginBottom: '4px' }}>

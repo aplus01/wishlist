@@ -25,6 +25,12 @@ export default function ReviewItems() {
   const [errorMessage, setErrorMessage] = useState('');
   const [showUnreserveModal, setShowUnreserveModal] = useState(false);
   const [unreservingId, setUnreservingId] = useState(null);
+  const [showEditImageModal, setShowEditImageModal] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [imageFormData, setImageFormData] = useState({
+    imageFile: null,
+    imageUrl: '',
+  });
   const [santaFormData, setSantaFormData] = useState({
     title: '',
     description: '',
@@ -266,6 +272,61 @@ export default function ReviewItems() {
     } catch (err) {
       console.error('Error marking as not purchased:', err);
       setErrorMessage('Failed to mark as not purchased.');
+      setShowErrorModal(true);
+    }
+  };
+
+  const openEditImageModal = (item) => {
+    setEditingItem(item);
+    setImageFormData({
+      imageFile: null,
+      imageUrl: '',
+    });
+    setShowEditImageModal(true);
+  };
+
+  const handleImageSubmit = async (e) => {
+    e.preventDefault();
+    if (!editingItem) return;
+
+    try {
+      const updateData = {};
+
+      // Handle file upload
+      if (imageFormData.imageFile) {
+        const formData = new FormData();
+        formData.append('image', imageFormData.imageFile);
+        await items.update(editingItem.id, formData);
+      }
+      // Handle URL download
+      else if (imageFormData.imageUrl) {
+        await items.update(editingItem.id, {
+          image_url: imageFormData.imageUrl,
+        });
+      } else {
+        setErrorMessage('Please select a file or enter an image URL.');
+        setShowErrorModal(true);
+        return;
+      }
+
+      setShowEditImageModal(false);
+      setEditingItem(null);
+      setImageFormData({ imageFile: null, imageUrl: '' });
+      loadData();
+    } catch (err) {
+      console.error('Error updating image:', err);
+      setErrorMessage('Failed to update image. Please try again.');
+      setShowErrorModal(true);
+    }
+  };
+
+  const handleRemoveImage = async (item) => {
+    try {
+      await items.update(item.id, { image: null });
+      loadData();
+    } catch (err) {
+      console.error('Error removing image:', err);
+      setErrorMessage('Failed to remove image.');
       setShowErrorModal(true);
     }
   };
@@ -636,20 +697,47 @@ export default function ReviewItems() {
                   return (
                     <tr key={item.id}>
                       <td>
-                        {item.image ? (
-                          <img
-                            src={getImageUrl(item, item.image, '100x100')}
-                            alt={item.title}
+                        <div style={{ position: 'relative', display: 'inline-block' }}>
+                          {item.image ? (
+                            <img
+                              src={getImageUrl(item, item.image, '100x100')}
+                              alt={item.title}
+                              style={{
+                                width: '60px',
+                                height: '60px',
+                                objectFit: 'cover',
+                                borderRadius: '4px',
+                              }}
+                            />
+                          ) : (
+                            <div style={{ fontSize: '32px', width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🎁</div>
+                          )}
+                          <button
+                            onClick={() => openEditImageModal(item)}
                             style={{
-                              width: '60px',
-                              height: '60px',
-                              objectFit: 'cover',
-                              borderRadius: '4px',
+                              position: 'absolute',
+                              bottom: '-4px',
+                              right: '-4px',
+                              background: 'var(--green-dark)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '50%',
+                              width: '24px',
+                              height: '24px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              padding: '0',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
                             }}
-                          />
-                        ) : (
-                          <div style={{ fontSize: '32px' }}>🎁</div>
-                        )}
+                            title="Edit image"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor">
+                              <path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/>
+                            </svg>
+                          </button>
+                        </div>
                       </td>
                       <td>
                         <div style={{ fontWeight: 600, marginBottom: '4px' }}>
@@ -843,7 +931,7 @@ export default function ReviewItems() {
 
             return (
               <div key={item.id} className='review-item-card'>
-                <div className='review-item-image'>
+                <div className='review-item-image' style={{ position: 'relative' }}>
                   {item.image ? (
                     <img
                       src={getImageUrl(item, item.image, '200x200')}
@@ -857,6 +945,31 @@ export default function ReviewItems() {
                       🎁
                     </div>
                   )}
+                  <button
+                    onClick={() => openEditImageModal(item)}
+                    style={{
+                      position: 'absolute',
+                      bottom: '8px',
+                      right: '8px',
+                      background: 'var(--green-dark)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '32px',
+                      height: '32px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                    }}
+                    title="Edit image"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor">
+                      <path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/>
+                    </svg>
+                  </button>
                 </div>
 
                 <div className='review-item-content'>
@@ -1478,6 +1591,149 @@ export default function ReviewItems() {
                 OK
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showEditImageModal && editingItem && (
+        <div className='modal-overlay'>
+          <div className='modal' onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
+            <button
+              type='button'
+              onClick={() => setShowEditImageModal(false)}
+              style={{
+                position: 'absolute',
+                top: '12px',
+                right: '12px',
+                background: 'transparent',
+                border: 'none',
+                fontSize: '24px',
+                cursor: 'pointer',
+                padding: '4px',
+                lineHeight: '1',
+                color: '#6b7280',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '32px',
+                height: '32px',
+                borderRadius: '4px',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#f3f4f6';
+                e.currentTarget.style.color = '#1f2937';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = '#6b7280';
+              }}
+              title="Close"
+            >
+              ×
+            </button>
+            <h2>Edit Image</h2>
+            <p style={{ marginBottom: '20px', color: '#718096' }}>
+              Upload a new image for "{editingItem.title}"
+            </p>
+
+            {editingItem.image && (
+              <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+                <p style={{ marginBottom: '10px', fontWeight: 600 }}>Current Image:</p>
+                <img
+                  src={getImageUrl(editingItem, editingItem.image, '300x300')}
+                  alt={editingItem.title}
+                  style={{
+                    maxWidth: '200px',
+                    maxHeight: '200px',
+                    objectFit: 'cover',
+                    borderRadius: '4px',
+                    border: '1px solid #d1d5db',
+                  }}
+                />
+                <div style={{ marginTop: '10px' }}>
+                  <button
+                    type='button'
+                    onClick={() => {
+                      if (confirm('Are you sure you want to remove this image?')) {
+                        handleRemoveImage(editingItem);
+                        setShowEditImageModal(false);
+                      }
+                    }}
+                    className='btn btn-danger'
+                    style={{ fontSize: '14px', padding: '6px 12px' }}
+                  >
+                    Remove Image
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleImageSubmit}>
+              <div className='input-group'>
+                <label>Upload Image File</label>
+                <input
+                  type='file'
+                  accept='image/*'
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setImageFormData({
+                        imageFile: file,
+                        imageUrl: '',
+                      });
+                    }
+                  }}
+                />
+                {imageFormData.imageFile && (
+                  <p style={{ fontSize: '14px', color: '#718096', marginTop: '8px' }}>
+                    Selected: {imageFormData.imageFile.name}
+                  </p>
+                )}
+              </div>
+
+              <div style={{ textAlign: 'center', margin: '20px 0', color: '#9ca3af', fontWeight: 600 }}>
+                OR
+              </div>
+
+              <div className='input-group'>
+                <label>Image URL</label>
+                <input
+                  type='url'
+                  value={imageFormData.imageUrl}
+                  onChange={(e) => {
+                    let value = e.target.value;
+                    // Auto-prepend https:// if user starts with www.
+                    if (value.startsWith('www.') && !value.includes('://')) {
+                      value = 'https://' + value;
+                    }
+                    setImageFormData({ imageFile: null, imageUrl: value });
+                  }}
+                  placeholder='https://example.com/image.jpg'
+                  disabled={!!imageFormData.imageFile}
+                />
+                <p style={{ fontSize: '14px', color: '#718096', marginTop: '8px' }}>
+                  The app will attempt to download and save the image from this URL
+                </p>
+              </div>
+
+              <div className='modal-actions'>
+                <button
+                  type='button'
+                  onClick={() => setShowEditImageModal(false)}
+                  className='btn btn-secondary'
+                >
+                  Cancel
+                </button>
+                <button
+                  type='submit'
+                  className='btn btn-success'
+                  disabled={!imageFormData.imageFile && !imageFormData.imageUrl}
+                >
+                  Update Image
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
