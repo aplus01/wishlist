@@ -326,6 +326,20 @@
           "maxSelect": 1,
           "displayFields": null
         }
+      },
+      {
+        "system": false,
+        "id": "priority_fld",
+        "name": "priority",
+        "type": "number",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "noDecimal": true
+        }
       }
     ],
     "indexes": [],
