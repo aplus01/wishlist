@@ -42,7 +42,7 @@ echo "✅ Transfer complete!"
 # Restart the container on remote
 echo ""
 echo "🔄 Restarting container on remote host..."
-ssh $REMOTE_HOST "cd $REMOTE_PATH && docker-compose up -d --force-recreate frontend"
+ssh $REMOTE_HOST "cd $REMOTE_PATH && docker compose up -d --force-recreate frontend"
 
 if [ $? -ne 0 ]; then
     echo "❌ Container restart failed!"

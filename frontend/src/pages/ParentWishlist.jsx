@@ -187,26 +187,21 @@ export default function ParentWishlist() {
 
   const handleSendToTop = async (itemId) => {
     try {
-      // Find the item and move it to priority 0, shift others down
-      const updates = wishlistItems.map((item, index) => {
-        if (item.id === itemId) {
-          return { id: item.id, priority: 0 };
-        } else {
-          return { id: item.id, priority: index + 1 };
-        }
-      });
+      // Find the item and move it to priority 1 (top), shift others down
+      const itemToMove = wishlistItems.find((item) => item.id === itemId);
+      const otherItems = wishlistItems.filter((item) => item.id !== itemId);
 
-      // Optimistically update local state
-      const updatedItems = [...wishlistItems];
-      const itemToMove = updatedItems.find((i) => i.id === itemId);
-      const otherItems = updatedItems.filter((i) => i.id !== itemId);
+      const updates = [
+        { id: itemId, priority: 1 },
+        ...otherItems.map((item, index) => ({ id: item.id, priority: index + 2 })),
+      ];
 
+      // Optimistically update local state with new objects (don't mutate)
       if (itemToMove) {
-        itemToMove.priority = 0;
-        otherItems.forEach((item, index) => {
-          item.priority = index + 1;
-        });
-        const newOrder = [itemToMove, ...otherItems];
+        const newOrder = [
+          { ...itemToMove, priority: 1 },
+          ...otherItems.map((item, index) => ({ ...item, priority: index + 2 })),
+        ];
         setWishlistItems(newOrder);
       }
 
