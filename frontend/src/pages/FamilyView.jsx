@@ -54,7 +54,7 @@ export default function FamilyView() {
         const allApprovedItems = await pb.collection('items').getFullList({
           filter: 'status = "approved"',
           expand: 'child,parent,reservations_via_item,reservations_via_item.reserved_by',
-          sort: '-approved_at',
+          sort: 'priority,-approved_at',
         });
 
         // Fetch all parent users separately (in case expand didn't work due to viewRule)
@@ -238,13 +238,26 @@ export default function FamilyView() {
     return statusMatch;
   });
 
-  // Group items by person (kid or parent)
+  // Group items by person (kid or parent), maintaining priority order
   const itemsByKid = filteredItems.reduce((acc, item) => {
     const personName = item.expand?.child?.name || item.expand?.parent?.name || 'Unknown';
     if (!acc[personName]) acc[personName] = [];
     acc[personName].push(item);
     return acc;
   }, {});
+
+  // Sort items within each person's list by priority (1 = highest priority, null = lowest)
+  Object.values(itemsByKid).forEach(items => {
+    items.sort((a, b) => {
+      const aPriority = a.priority || 999;
+      const bPriority = b.priority || 999;
+      if (aPriority !== bPriority) {
+        return aPriority - bPriority;
+      }
+      // Secondary sort: most recently approved first
+      return new Date(b.approved_at || 0) - new Date(a.approved_at || 0);
+    });
+  });
 
   // Get unique person names (kids and parents) for filter dropdown
   const allKidNames = [
@@ -385,26 +398,62 @@ export default function FamilyView() {
                 overflow: 'hidden',
               }}
             >
-              <h2
+              <div
                 style={{
-                  margin: 0,
-                  color: '#FFFFFF',
                   background: 'var(--container-header-bg-color)',
                   padding: '16px 24px',
-                  fontSize: '24px',
-                  fontWeight: 700,
                 }}
               >
-                {kidName}'s Wishlist
-              </h2>
+                <h2
+                  style={{
+                    margin: 0,
+                    color: '#FFFFFF',
+                    fontSize: '24px',
+                    fontWeight: 700,
+                  }}
+                >
+                  {kidName}'s Wishlist
+                </h2>
+                <p
+                  style={{
+                    margin: '4px 0 0 0',
+                    color: 'rgba(255, 255, 255, 0.8)',
+                    fontSize: '14px',
+                  }}
+                >
+                  ★ Listed in order of priority
+                </p>
+              </div>
 
               <div className='grid grid-2' style={{ padding: '24px' }}>
-                {kidItems.map((item) => {
+                {kidItems.map((item, index) => {
                   const reserved = isItemReserved(item);
                   const myReservation = getMyReservation(item);
 
                   return (
-                    <div key={item.id} className='item-card'>
+                    <div key={item.id} className='item-card' style={{ position: 'relative' }}>
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '-8px',
+                          left: '-8px',
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          background: index === 0 ? 'var(--gold)' : index === 1 ? '#a0aec0' : index === 2 ? '#cd7f32' : 'var(--green-dark)',
+                          color: 'white',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 700,
+                          fontSize: '14px',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                          zIndex: 1,
+                        }}
+                        title={`Priority #${index + 1}`}
+                      >
+                        {index + 1}
+                      </div>
                       {item.image ? (
                         <img
                           src={getImageUrl(item, item.image, '300x300')}

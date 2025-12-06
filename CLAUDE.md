@@ -84,3 +84,4 @@ In `frontend/.env`:
 ```bash
 VITE_POCKETBASE_URL=http://127.0.0.1:8090  # PocketBase server URL
 ```
+- the deployed code lives in /mnt/c/wishlist on microbot

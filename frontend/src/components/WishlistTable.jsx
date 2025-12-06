@@ -41,10 +41,10 @@ export default function WishlistTable({
     const [draggedItem] = newItems.splice(draggedIndex, 1);
     newItems.splice(dropIndex, 0, draggedItem);
 
-    // Update priorities based on new positions
+    // Update priorities based on new positions (1-based)
     const updates = newItems.map((item, index) => ({
       id: item.id,
-      priority: index,
+      priority: index + 1,
     }));
 
     onReorder(updates);

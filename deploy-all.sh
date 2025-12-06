@@ -15,7 +15,7 @@ echo "========================================"
 # Build all images
 echo ""
 echo "📦 Building all images..."
-docker-compose build
+docker compose build
 
 if [ $? -ne 0 ]; then
     echo "❌ Build failed!"
@@ -39,7 +39,7 @@ echo "✅ Transfer complete!"
 # Restart all containers on remote
 echo ""
 echo "🔄 Restarting all containers on remote host..."
-ssh $REMOTE_HOST "cd $REMOTE_PATH && docker-compose up -d --force-recreate"
+ssh $REMOTE_HOST "cd $REMOTE_PATH && docker compose up -d --force-recreate"
 
 if [ $? -ne 0 ]; then
     echo "❌ Container restart failed!"
