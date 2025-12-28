@@ -6,7 +6,7 @@
 set -e  # Exit on error
 
 REMOTE_HOST="aaron@microbot"
-REMOTE_PATH="c:\\wishlist"  # Windows path on microbot
+REMOTE_PATH="/mnt/c/wishlist"  # Windows path on microbot
 IMAGE_NAME="wishlist-backend:latest"
 
 echo "========================================"
